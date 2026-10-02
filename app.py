@@ -32,7 +32,10 @@ def pesquisar_na_web(pergunta, chave):
         "Content-Type": "application/json",
     }
     dados = {
-        "query": pergunta,
+        "query": (
+            "Pesquise a pergunta a seguir e escreva a resposta em português brasileiro: "
+            f"{pergunta}"
+        ),
         "topic": "general",
         "search_depth": "basic",
         "max_results": 5,
@@ -54,6 +57,7 @@ def pesquisar_na_web(pergunta, chave):
         "include_domains_mode": "prefer",
         "country": "brazil",
         "language": "pt",
+        "filter_by_language": True,
         "safe_search": True,
     }
     resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=30)
