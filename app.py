@@ -222,7 +222,9 @@ if buscar:
                 try:
                     video = pesquisar_video_youtube(pergunta.strip())
                     if video:
-                        st.markdown(f"**Prévia: {video.get('title', 'Vídeo relacionado')}**")
+                        video_id = video["id"]
+                        link_video = f"https://www.youtube.com/watch?v={video_id}"
+                        st.markdown(f"**{video.get('title', 'Vídeo relacionado')}**")
                         canal = video.get("channel") or video.get("uploader")
                         visualizacoes = video.get("view_count")
                         detalhes = []
@@ -232,35 +234,42 @@ if buscar:
                             detalhes.append(f"Visualizações: {visualizacoes:,}".replace(",", "."))
                         if detalhes:
                             st.caption(" • ".join(detalhes))
-                        st.video(f"https://www.youtube.com/watch?v={video['id']}")
-                        st.caption("Visualizações não garantem que um vídeo seja viral ou que esteja correto.")
+                        st.link_button("Assistir vídeo selecionado", link_video)
+                        st.image(
+                            f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
+                            caption="Prévia do vídeo. Clique abaixo para assistir no YouTube.",
+                            width=480,
+                        )
                     else:
                         st.info("Não consegui carregar a prévia agora. Use o botão para abrir os resultados no YouTube.")
                 except Exception:
                     st.info("O YouTube não disponibilizou a prévia agora. Use o botão para abrir os resultados.")
 
-                st.subheader("Fontes para conferir")
+                st.subheader("Fontes para conferir (principais)")
                 if fontes:
-                    for fonte in fontes:
-                        st.markdown(f"### [{fonte['title']}]({fonte['url']})")
+                    for fonte in fontes[:3]:
+                        titulo = (fonte.get("title") or "Fonte da web").strip()
+                        if len(titulo) > 72:
+                            titulo = titulo[:69].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+                        st.markdown(f"**[{titulo}]({fonte['url']})**")
                         if fonte.get("domain"):
-                            st.caption(f"Site: {fonte['domain']}")
+                            st.caption(fonte["domain"])
                         trecho = (fonte.get("content") or "").strip()
                         if trecho:
-                            limite_trecho = 650 if modo_web else 350
+                            limite_trecho = 180
                             if len(trecho) > limite_trecho:
                                 trecho = trecho[:limite_trecho].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
                             st.write(trecho)
-                        else:
-                            st.caption("Abra o link para consultar a página original.")
                 else:
                     st.info("Não encontrei fontes para mostrar.")
 
                 sugestoes = [
-                    f"Características de {pergunta.strip()}",
+                    f"Principais fatos sobre {pergunta.strip()}",
                     f"Como funciona {pergunta.strip()}",
-                    f"Importância de {pergunta.strip()}",
-                    f"Curiosidades sobre {pergunta.strip()}",
+                    f"Benefícios e riscos de {pergunta.strip()}",
+                    f"História de {pergunta.strip()}",
+                    f"Impactos de {pergunta.strip()}",
+                    f"Novidades sobre {pergunta.strip()}",
                 ]
                 st.subheader("Sugestões de pesquisas relacionadas")
                 colunas = st.columns(2)
