@@ -42,6 +42,8 @@ estilo = (
     [data-testid="stAppViewContainer"] { background:__COR_FUNDO__; color:var(--ink); }
     [data-testid="stMain"] { color:var(--ink); }
     [data-testid="stCaptionContainer"] { color:var(--muted); }
+    [data-testid="stCaptionContainer"] p { color:var(--muted) !important; opacity:1; }
+    [data-testid="stMarkdownContainer"] p { color:var(--ink); }
     a { color:var(--blue); }
     [data-testid="stHeader"] { background:transparent; }
     footer, [data-testid="stFooter"], [data-testid="stDecoration"],
@@ -179,6 +181,7 @@ TRADUCOES_UI = {
         "page_preview": "Prévia da página", "preview_note": "Alguns sites bloqueiam a exibição incorporada. Se a página não carregar, o resumo acima continua disponível.",
         "open_source": "Abrir esta fonte fora do Knowix (opcional)", "source_page": "Fonte da web",
         "translation_wait": "Traduzindo a resposta e as fontes...", "translation_error": "O serviço de tradução não respondeu desta vez; parte do conteúdo pode continuar em português.",
+        "channel": "Canal", "views": "Visualizações",
         "footer_note": "O Knowix pesquisa páginas públicas indexadas na web. Compare as fontes antes de usar informações importantes.",
     },
     "English": {
@@ -212,6 +215,7 @@ TRADUCOES_UI = {
         "page_preview": "Page preview", "preview_note": "Some websites block embedded viewing. If the page does not load, the summary above is still available.",
         "open_source": "Open this source outside Knowix (optional)", "source_page": "Web source",
         "translation_wait": "Translating the answer and sources...", "translation_error": "The translation service did not respond this time; some content may remain in Portuguese.",
+        "channel": "Channel", "views": "Views",
         "footer_note": "Knowix searches public pages indexed on the web. Compare sources before using important information.",
     },
     "Español": {
@@ -245,6 +249,7 @@ TRADUCOES_UI = {
         "page_preview": "Vista previa de la página", "preview_note": "Algunos sitios bloquean la visualización integrada. Si la página no carga, el resumen de arriba seguirá disponible.",
         "open_source": "Abrir esta fuente fuera de Knowix (opcional)", "source_page": "Fuente web",
         "translation_wait": "Traduciendo la respuesta y las fuentes...", "translation_error": "El servicio de traducción no respondió esta vez; parte del contenido puede seguir en portugués.",
+        "channel": "Canal", "views": "Visualizaciones",
         "footer_note": "Knowix busca páginas públicas indexadas en la web. Compara las fuentes antes de usar información importante.",
     },
 }
@@ -253,6 +258,18 @@ TRADUCOES_UI = {
 def texto_ui(chave):
     idioma = st.session_state.idioma_visual
     return TRADUCOES_UI[idioma].get(chave, TRADUCOES_UI["Português"].get(chave, chave))
+
+
+def sincronizar_secao_selecionada():
+    """Mantém a navegação interna correta para o rótulo do idioma atual."""
+    idioma = st.session_state.idioma_visual
+    opcoes = {
+        TRADUCOES_UI[idioma].get(f"section_{secao}", secao): secao
+        for secao in ["Pesquisar", "Nova aba", "Histórico", "Configurações", "Sobre o app", "Sugestões"]
+    }
+    selecionada = st.session_state.get("secao_display")
+    if selecionada in opcoes:
+        st.session_state.secao_canonica = opcoes[selecionada]
 
 
 def traduzir_textos(textos):
@@ -479,7 +496,8 @@ def preparar_busca_interna(assunto):
     st.session_state.busca_pendente = assunto
     st.session_state.pergunta_principal = assunto
     st.session_state.fonte_aberta = None
-    st.session_state.secao_app = "Pesquisar"
+    st.session_state.secao_canonica = "Pesquisar"
+    st.session_state.secao_display = texto_ui("section_Pesquisar")
 
 
 def abrir_fonte_no_knowix(fonte):
@@ -570,19 +588,27 @@ def buscar_resultados(assunto, chave_tavily):
 
 
 SECOES_APP = ["Pesquisar", "Nova aba", "Histórico", "Configurações", "Sobre o app", "Sugestões"]
-if "secao_app" not in st.session_state:
-    st.session_state.secao_app = "Pesquisar"
 nomes_secoes = {
     secao: texto_ui(f"section_{secao}")
     for secao in SECOES_APP
 }
-secao_app = st.selectbox(
-    "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix",
-    SECOES_APP,
-    format_func=lambda secao: nomes_secoes[secao],
-    key="secao_app",
+if "secao_canonica" not in st.session_state:
+    st.session_state.secao_canonica = "Pesquisar"
+if "secao_display" not in st.session_state or st.session_state.secao_canonica not in nomes_secoes:
+    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
+elif st.session_state.secao_display != nomes_secoes[st.session_state.secao_canonica]:
+    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
+opcoes_secoes = {nome: secao for secao, nome in nomes_secoes.items()}
+rotulo_secoes = "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix"
+secao_selecionada = st.selectbox(
+    rotulo_secoes,
+    list(opcoes_secoes),
+    key="secao_display",
+    on_change=sincronizar_secao_selecionada,
     label_visibility="collapsed",
 )
+secao_app = opcoes_secoes[secao_selecionada]
+st.session_state.secao_canonica = secao_app
 
 buscar = False
 pergunta = ""
@@ -758,9 +784,10 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                     st.markdown(f"**{encurtar(video.get('title', texto_ui('related_video')), 90)}**")
                     detalhes_video = []
                     if video.get("channel"):
-                        detalhes_video.append(f"Canal: {video['channel']}")
+                        detalhes_video.append(f"{texto_ui('channel')}: {video['channel']}")
                     if video.get("view_count") is not None:
-                        detalhes_video.append(f"Visualizações: {video['view_count']:,}".replace(",", "."))
+                        visualizacoes = f"{video['view_count']:,}".replace(",", ".")
+                        detalhes_video.append(f"{texto_ui('views')}: {visualizacoes}")
                     if detalhes_video:
                         st.caption(" • ".join(detalhes_video))
                     st.iframe(
