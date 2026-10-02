@@ -1,5 +1,7 @@
 import os
 import re
+import time
+from concurrent.futures import ThreadPoolExecutor
 from html import escape
 from urllib.parse import quote_plus, urlparse
 
@@ -86,6 +88,14 @@ st.markdown(
 
 if "historico_pesquisas" not in st.session_state:
     st.session_state.historico_pesquisas = []
+if "cache_buscas" not in st.session_state:
+    st.session_state.cache_buscas = {}
+if "resultado_atual" not in st.session_state:
+    st.session_state.resultado_atual = None
+if "fonte_aberta" not in st.session_state:
+    st.session_state.fonte_aberta = None
+if "busca_pendente" not in st.session_state:
+    st.session_state.busca_pendente = None
 
 st.markdown(
     """
@@ -215,6 +225,100 @@ def resumir_resposta(texto):
     return encurtar(" ".join(frases[:3]), 620)
 
 
+def preparar_busca_interna(assunto):
+    """Agenda uma busca sugerida sem sair do Knowix."""
+    st.session_state.busca_pendente = assunto
+    st.session_state.pergunta_principal = assunto
+    st.session_state.fonte_aberta = None
+
+
+def abrir_fonte_no_knowix(fonte):
+    st.session_state.fonte_aberta = fonte
+
+
+def buscar_resultados(assunto, chave_tavily):
+    """Busca web e vídeo em paralelo e mantém cache privado da sessão por 10 minutos."""
+    chave_cache = assunto.strip().casefold()
+    cache = st.session_state.cache_buscas
+    agora = time.monotonic()
+    item_cache = cache.get(chave_cache)
+    if item_cache and agora - item_cache["instante"] < 600:
+        return item_cache["dados"], True
+    if item_cache:
+        cache.pop(chave_cache, None)
+
+    resposta_direta = ""
+    fontes = []
+    video = None
+    avisos = []
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        if chave_tavily:
+            busca_web = executor.submit(pesquisar_na_web, assunto, chave_tavily)
+        else:
+            busca_web = executor.submit(pesquisar_wikipedia, assunto)
+        busca_video = executor.submit(pesquisar_video_youtube, f"{assunto} em português")
+
+        try:
+            dados_web = busca_web.result()
+            if chave_tavily:
+                resposta_direta = (dados_web.get("answer") or "").strip()
+                for item in dados_web.get("results", []):
+                    url_fonte = item.get("url", "")
+                    if urlparse(url_fonte).scheme in {"http", "https"}:
+                        fontes.append(
+                            {
+                                "title": item.get("title") or "Abrir resultado",
+                                "url": url_fonte,
+                                "content": item.get("content", ""),
+                                "domain": urlparse(url_fonte).netloc.removeprefix("www."),
+                            }
+                        )
+            elif dados_web:
+                pagina = escolher_pagina_principal(dados_web, assunto)
+                resposta_direta = (pagina.get("extract") or "").strip()
+                fontes = [
+                    {
+                        "title": item.get("title", "Abrir resultado"),
+                        "url": item.get("fullurl", ""),
+                        "content": item.get("extract", ""),
+                        "domain": "pt.wikipedia.org",
+                    }
+                    for item in dados_web
+                    if item.get("fullurl")
+                ]
+                avisos.append(
+                    "A pesquisa geral ainda não está configurada. No momento, mostro resultados da Wikipédia em português."
+                )
+        except ValueError as erro:
+            avisos.append(str(erro))
+        except requests.exceptions.RequestException:
+            avisos.append("A pesquisa de fontes está indisponível no momento.")
+
+        try:
+            video_encontrado = busca_video.result()
+            if video_encontrado:
+                video = {
+                    "id": video_encontrado.get("id"),
+                    "title": video_encontrado.get("title", "Vídeo relacionado"),
+                    "channel": video_encontrado.get("channel") or video_encontrado.get("uploader"),
+                    "view_count": video_encontrado.get("view_count"),
+                }
+        except Exception:
+            avisos.append("Não consegui buscar um vídeo agora; as fontes continuam disponíveis.")
+
+    dados = {
+        "assunto": assunto,
+        "resposta": resposta_direta,
+        "fontes": fontes,
+        "video": video,
+        "avisos": avisos,
+    }
+    cache[chave_cache] = {"instante": time.monotonic(), "dados": dados}
+    if len(cache) > 20:
+        cache.pop(next(iter(cache)))
+    return dados, False
+
+
 tab_pesquisar, tab_nova_aba, tab_historico, tab_config, tab_sobre, tab_sugestoes = st.tabs(
     ["🔎 Pesquisar", "＋ Nova aba", "◷ Histórico", "⚙ Configurações", "ⓘ Sobre o app", "✉ Sugestões"]
 )
@@ -247,6 +351,12 @@ with tab_nova_aba:
     if buscar_nova:
         pergunta = pergunta_nova
         buscar = True
+
+busca_pendente = st.session_state.busca_pendente
+if busca_pendente:
+    pergunta = busca_pendente
+    buscar = True
+    st.session_state.busca_pendente = None
 
 if buscar and pergunta.strip():
     termo_historico = pergunta.strip()
@@ -305,53 +415,33 @@ if buscar:
     if not assunto:
         st.warning("Digite um assunto para começar a pesquisa.")
     else:
-        chave_tavily = obter_chave_tavily()
-        resposta_direta = ""
-        fontes = []
-        modo_web = bool(chave_tavily)
+        with st.spinner("Pesquisando páginas e vídeos ao mesmo tempo..."):
+            dados_busca, veio_do_cache = buscar_resultados(assunto, obter_chave_tavily())
+        st.session_state.resultado_atual = dados_busca
+        st.session_state.fonte_aberta = None
+        if veio_do_cache:
+            st.caption("Resultado recente carregado da sua sessão.")
+        for aviso in dados_busca["avisos"]:
+            st.info(aviso)
 
-        if chave_tavily:
-            with st.spinner("Pesquisando na web aberta..."):
-                try:
-                    resultado_web = pesquisar_na_web(assunto, chave_tavily)
-                    resposta_direta = (resultado_web.get("answer") or "").strip()
-                    for item in resultado_web.get("results", []):
-                        url_fonte = item.get("url", "")
-                        if urlparse(url_fonte).scheme in {"http", "https"}:
-                            fontes.append(
-                                {
-                                    "title": item.get("title") or "Abrir resultado",
-                                    "url": url_fonte,
-                                    "content": item.get("content", ""),
-                                    "domain": urlparse(url_fonte).netloc.removeprefix("www."),
-                                }
-                            )
-                except (ValueError, requests.exceptions.RequestException) as erro:
-                    st.warning(f"{erro} Ainda vou tentar encontrar um vídeo e sugestões.")
-        else:
-            with st.spinner("Pesquisando na Wikipédia em português..."):
-                try:
-                    paginas = pesquisar_wikipedia(assunto)
-                    if paginas:
-                        pagina = escolher_pagina_principal(paginas, assunto)
-                        resposta_direta = (pagina.get("extract") or "").strip()
-                        fontes = [
-                            {
-                                "title": item.get("title", "Abrir resultado"),
-                                "url": item.get("fullurl", ""),
-                                "content": item.get("extract", ""),
-                                "domain": "pt.wikipedia.org",
-                            }
-                            for item in paginas
-                            if item.get("fullurl")
-                        ]
-                except requests.exceptions.RequestException:
-                    st.warning("A pesquisa de fontes está indisponível no momento.")
-            st.info(
-                "A pesquisa geral ainda não está configurada. No momento, mostro resultados da "
-                "Wikipédia em português."
-            )
+resultado_atual = st.session_state.resultado_atual
+if resultado_atual:
+    assunto = resultado_atual["assunto"]
+    fontes = resultado_atual["fontes"]
+    video = resultado_atual["video"]
 
+    if st.session_state.fonte_aberta:
+        fonte = st.session_state.fonte_aberta
+        st.button("← Voltar aos resultados", on_click=lambda: setattr(st.session_state, "fonte_aberta", None))
+        st.markdown(f"### {fonte['title']}")
+        st.caption(fonte.get("domain", "Fonte da web"))
+        st.markdown("#### Resumo disponível no Knowix")
+        st.write(fonte.get("content") or "Esta fonte não forneceu um trecho de texto para prévia.")
+        st.markdown("#### Prévia da página")
+        st.caption("Alguns sites bloqueiam a exibição incorporada. Se a página não carregar, o resumo acima continua disponível.")
+        st.iframe(fonte["url"], height=600)
+        st.link_button("Abrir esta fonte fora do Knowix (opcional)", fonte["url"], use_container_width=True)
+    else:
         assunto_seguro = escape(assunto)
         st.markdown(
             f'<div class="section-kicker">Resultados para “{assunto_seguro}”</div>',
@@ -362,8 +452,8 @@ if buscar:
         with col_resposta:
             with st.container(border=True):
                 st.markdown('<div class="answer-label">✦ RESPOSTA RÁPIDA</div>', unsafe_allow_html=True)
-                if resposta_direta:
-                    st.markdown(resumir_resposta(resposta_direta))
+                if resultado_atual["resposta"]:
+                    st.markdown(resumir_resposta(resultado_atual["resposta"]))
                     st.caption("Resumo automático da busca. Abra as páginas abaixo para conferir os detalhes.")
                 else:
                     st.write("Não consegui montar uma resposta direta agora. Veja os sites encontrados abaixo.")
@@ -371,41 +461,25 @@ if buscar:
         with col_video:
             with st.container(border=True):
                 st.markdown('<div class="section-kicker">▶ VÍDEO EM DESTAQUE</div>', unsafe_allow_html=True)
-                try:
-                    video = pesquisar_video_youtube(f"{assunto} em português")
-                    if video:
-                        video_id = video["id"]
-                        if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
-                            st.markdown(f"**{encurtar(video.get('title', 'Vídeo relacionado'), 90)}**")
-                            canal = video.get("channel") or video.get("uploader")
-                            if canal:
-                                visualizacoes = video.get("view_count")
-                                detalhes_video = [f"Canal: {canal}"]
-                                if visualizacoes is not None:
-                                    detalhes_video.append(
-                                        f"Visualizações: {visualizacoes:,}".replace(",", ".")
-                                    )
-                                st.caption(" • ".join(detalhes_video))
-                            st.iframe(
-                                f"https://www.youtube-nocookie.com/embed/{video_id}?rel=0&playsinline=1",
-                                height=300,
-                            )
-                            st.link_button(
-                                "Abrir vídeo no YouTube",
-                                f"https://www.youtube.com/watch?v={video_id}",
-                                use_container_width=True,
-                            )
-                        else:
-                            st.info("Não consegui abrir a prévia deste vídeo. Veja os resultados no YouTube.")
-                    else:
-                        st.info("Ainda não encontrei uma prévia para este assunto.")
-                except Exception:
-                    st.info("A prévia está indisponível agora. Você ainda pode buscar vídeos no YouTube.")
-                st.link_button(
-                    "Ver mais vídeos",
-                    f"https://www.youtube.com/results?search_query={quote_plus(assunto)}",
-                    use_container_width=True,
-                )
+                if video and re.fullmatch(r"[A-Za-z0-9_-]{11}", video.get("id", "")):
+                    st.markdown(f"**{encurtar(video.get('title', 'Vídeo relacionado'), 90)}**")
+                    detalhes_video = []
+                    if video.get("channel"):
+                        detalhes_video.append(f"Canal: {video['channel']}")
+                    if video.get("view_count") is not None:
+                        detalhes_video.append(f"Visualizações: {video['view_count']:,}".replace(",", "."))
+                    if detalhes_video:
+                        st.caption(" • ".join(detalhes_video))
+                    st.iframe(
+                        f"https://www.youtube-nocookie.com/embed/{video['id']}?rel=0&playsinline=1",
+                        height=300,
+                    )
+                    st.caption("A prévia é reproduzida dentro do Knowix. Os controles do YouTube podem oferecer links externos.")
+                else:
+                    st.info("Não encontrei uma prévia de vídeo para este assunto.")
+                if st.button("Buscar mais vídeos no Knowix", key="mais_videos_interno"):
+                    preparar_busca_interna(f"vídeos sobre {assunto}")
+                    st.rerun()
 
         st.markdown("### 🌐 Sites encontrados")
         if fontes:
@@ -415,9 +489,11 @@ if buscar:
                     with st.container(border=True):
                         if fonte.get("domain"):
                             st.caption(f"●  {fonte['domain']}")
-                        st.link_button(
-                            encurtar(fonte.get("title", "Abrir resultado"), 76),
-                            fonte["url"],
+                        st.button(
+                            encurtar(fonte.get("title", "Ler fonte no Knowix"), 76),
+                            key=f"fonte_interna_{indice}",
+                            on_click=abrir_fonte_no_knowix,
+                            args=(fonte,),
                             use_container_width=True,
                         )
                         trecho = encurtar(fonte.get("content", ""), 210)
@@ -441,13 +517,15 @@ if buscar:
             f"Vídeos explicativos sobre {tema}",
         ]
         st.markdown("### ✨ Continue explorando")
-        st.caption("Sugestões de buscas relacionadas")
+        st.caption("Sugestões de buscas dentro do Knowix")
         colunas_sugestoes = st.columns(3, gap="small")
         for indice, sugestao in enumerate(sugestoes):
             with colunas_sugestoes[indice % 3]:
-                st.link_button(
+                st.button(
                     sugestao,
-                    f"https://www.google.com/search?q={quote_plus(sugestao)}",
+                    key=f"sugestao_interna_{indice}",
+                    on_click=preparar_busca_interna,
+                    args=(sugestao,),
                     use_container_width=True,
                 )
 
