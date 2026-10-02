@@ -276,6 +276,16 @@ def sincronizar_secao_selecionada():
         st.session_state.secao_canonica = opcoes[selecionada]
 
 
+def sincronizar_tema_selecionado():
+    """Guarda Claro/Escuro independentemente do idioma do rótulo visível."""
+    idioma = st.session_state.idioma_visual
+    nomes = {"Claro": "Claro", "Escuro": "Dark" if idioma == "English" else "Oscuro" if idioma == "Español" else "Escuro"}
+    opcoes = {nome: tema for tema, nome in nomes.items()}
+    selecionado = st.session_state.get("tema_display")
+    if selecionado in opcoes:
+        st.session_state.tema_visual = opcoes[selecionado]
+
+
 def traduzir_textos(textos):
     """Traduz textos de resultados e conserva traduções durante a sessão."""
     destino = {"Português": None, "English": "en", "Español": "es"}[st.session_state.idioma_visual]
@@ -676,11 +686,18 @@ elif secao_app == "Histórico":
 elif secao_app == "Configurações":
     st.markdown(f"### {texto_ui('settings_title')}")
     st.markdown(f"#### {texto_ui('appearance')}")
+    nomes_temas = {
+        "Claro": "Claro",
+        "Escuro": "Dark" if st.session_state.idioma_visual == "English" else "Oscuro" if st.session_state.idioma_visual == "Español" else "Escuro",
+    }
+    tema_exibido = nomes_temas[st.session_state.tema_visual]
+    if st.session_state.get("tema_display") != tema_exibido:
+        st.session_state.tema_display = tema_exibido
     st.radio(
         texto_ui("theme_label"),
-        ["Claro", "Escuro"],
-        format_func=lambda tema: tema if st.session_state.idioma_visual == "Português" else {"Claro": "Light", "Escuro": "Dark"}.get(tema, tema) if st.session_state.idioma_visual == "English" else {"Claro": "Claro", "Escuro": "Oscuro"}.get(tema, tema),
-        key="tema_visual",
+        list(nomes_temas.values()),
+        key="tema_display",
+        on_change=sincronizar_tema_selecionado,
         horizontal=True,
     )
     st.caption(texto_ui("theme_caption"))
