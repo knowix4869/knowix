@@ -118,12 +118,12 @@ def escolher_pagina_principal(paginas, assunto):
 
 
 def pesquisar_video_youtube(assunto):
-    """Procura cinco vídeos e escolhe o mais visto entre esses resultados."""
+    """Retorna o primeiro vídeo relevante sem baixar detalhes de todos os resultados."""
     opcoes = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
-        "extract_flat": False,
+        "extract_flat": True,
         "ignoreerrors": True,
         "noplaylist": True,
     }
@@ -133,7 +133,7 @@ def pesquisar_video_youtube(assunto):
     videos = [video for video in (resultado or {}).get("entries", []) if video and video.get("id")]
     if not videos:
         return None
-    return max(videos, key=lambda video: video.get("view_count") or 0)
+    return videos[0]
 
 
 with st.form("formulario_pesquisa"):
@@ -151,20 +151,29 @@ if buscar:
         with st.spinner("Pesquisando na web e reunindo fontes..."):
             try:
                 if chave_tavily:
-                    resultado_web = pesquisar_na_web(pergunta.strip(), chave_tavily)
-                    resposta_direta = resultado_web.get("answer", "").strip()
-                    resultados = resultado_web.get("results", [])
-                    fontes = [
-                        {
-                            "title": item.get("title") or "Fonte da web",
-                            "url": item.get("url", ""),
-                            "content": item.get("content", ""),
-                            "domain": urlparse(item.get("url", "")).netloc,
-                        }
-                        for item in resultados
-                        if item.get("url")
-                    ]
                     modo_web = True
+                    try:
+                        resultado_web = pesquisar_na_web(pergunta.strip(), chave_tavily)
+                        resposta_direta = resultado_web.get("answer", "").strip()
+                        resultados = resultado_web.get("results", [])
+                        fontes = [
+                            {
+                                "title": item.get("title") or "Fonte da web",
+                                "url": item.get("url", ""),
+                                "content": item.get("content", ""),
+                                "domain": urlparse(item.get("url", "")).netloc,
+                            }
+                            for item in resultados
+                            if item.get("url")
+                        ]
+                    except ValueError as erro:
+                        st.warning(f"{erro} Vou tentar mostrar os vídeos mesmo assim.")
+                        resposta_direta = ""
+                        fontes = []
+                    except requests.exceptions.RequestException:
+                        st.warning("A busca de fontes está indisponível agora. Vou tentar mostrar os vídeos mesmo assim.")
+                        resposta_direta = ""
+                        fontes = []
                 else:
                     paginas = pesquisar_wikipedia(pergunta.strip())
                     if not paginas:
