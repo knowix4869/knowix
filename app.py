@@ -17,12 +17,28 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-st.markdown(
+if "tema_visual" not in st.session_state:
+    st.session_state.tema_visual = "Claro"
+
+tema_escuro = st.session_state.tema_visual == "Escuro"
+cor_fundo = "#0d1422" if tema_escuro else "#f4f7fc"
+cor_cartao = "#172235" if tema_escuro else "#ffffff"
+cor_texto = "#eef3ff" if tema_escuro else "#14213d"
+cor_secundaria = "#adbad0" if tema_escuro else "#69758c"
+cor_borda = "#33425a" if tema_escuro else "#e2e8f2"
+cor_campo = "#202d43" if tema_escuro else "#f4f7fb"
+cor_azul = "#8db4ff" if tema_escuro else "#246bfe"
+cor_texto_botao = "#eef3ff" if tema_escuro else "#14213d"
+
+estilo = (
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-    :root { --ink:#14213d; --muted:#69758c; --blue:#246bfe; --line:#e2e8f2; }
-    [data-testid="stAppViewContainer"] { background:#f4f7fc; color:var(--ink); }
+    :root { --ink:__COR_TEXTO__; --muted:__COR_SECUNDARIA__; --blue:__COR_AZUL__; --line:__COR_BORDA__; }
+    [data-testid="stAppViewContainer"] { background:__COR_FUNDO__; color:var(--ink); }
+    [data-testid="stMain"] { color:var(--ink); }
+    [data-testid="stCaptionContainer"] { color:var(--muted); }
+    a { color:var(--blue); }
     [data-testid="stHeader"] { background:transparent; }
     footer, [data-testid="stFooter"], [data-testid="stDecoration"],
     [data-testid="stToolbar"], [data-testid="stAppDeployButton"],
@@ -32,35 +48,48 @@ st.markdown(
     [data-testid="stTabs"] [role="tablist"] { gap:.35rem; overflow-x:auto; }
     [data-testid="stTabs"] button[role="tab"] { white-space:nowrap; }
     [data-testid="stSelectbox"] [role="combobox"] {
-      background:#fff; border:1px solid #cbd6e6; border-radius:13px; min-height:48px;
+      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:13px; min-height:48px;
     }
-    [data-testid="stSelectbox"] [role="combobox"] * { color:#14213d !important; font-size:15px; }
+    [data-testid="stSelectbox"] [role="combobox"] * { color:__COR_TEXTO__ !important; font-size:15px; }
+    [data-testid="stSelectbox"] [role="listbox"],
+    [data-testid="stSelectbox"] [role="option"],
+    [role="listbox"][aria-label="Escolha uma seção do Knowix"] {
+      background:__COR_CARTAO__ !important; color:__COR_TEXTO__ !important;
+    }
+    [data-testid="stSelectbox"] [role="option"] *,
+    [role="listbox"][aria-label="Escolha uma seção do Knowix"] * { color:__COR_TEXTO__ !important; }
+    [data-testid="stSelectbox"] [role="option"]:hover,
+    [role="listbox"][aria-label="Escolha uma seção do Knowix"] [role="option"]:hover {
+      background:__COR_CAMPO__ !important;
+    }
+    [data-testid="stRadio"] label,
+    [data-testid="stRadio"] label * { color:__COR_TEXTO__ !important; }
     div[data-testid="stButton"] button {
-      background:#fff; border:1px solid #cbd6e6; border-radius:12px;
-      color:#14213d !important; font-size:15px; font-weight:650;
+      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:12px;
+      color:__COR_TEXTO_BOTAO__ !important; font-size:15px; font-weight:650;
       min-height:48px; white-space:normal;
     }
-    div[data-testid="stButton"] button:hover { border-color:#246bfe; color:#174fc4 !important; }
+    div[data-testid="stButton"] button:hover { border-color:__COR_AZUL__; color:__COR_AZUL__ !important; }
     .brand-row { align-items:center; display:flex; gap:14px; justify-content:center; }
     .brand-mark {
       align-items:center; background:linear-gradient(135deg,#3478ff,#7d55f6);
       border-radius:16px; box-shadow:0 9px 22px rgba(54,105,240,.25);
       color:#fff; display:flex; font-size:25px; height:52px; justify-content:center; width:52px;
     }
-    .brand-name { color:#17233f; font-size:35px; font-weight:800; letter-spacing:-1.5px; }
-    .hero-copy { color:#71809a; font-size:15px; margin:7px 0 20px; text-align:center; }
-    .search-hint { color:#8490a5; font-size:12px; margin:10px 4px 0; text-align:center; }
+    .brand-name { color:var(--ink); font-size:35px; font-weight:800; letter-spacing:-1.5px; }
+    .hero-copy { color:var(--muted); font-size:15px; margin:7px 0 20px; text-align:center; }
+    .search-hint { color:var(--muted); font-size:12px; margin:10px 4px 0; text-align:center; }
     div[data-testid="stForm"] {
-      background:#fff; border:1px solid #e1e7f0; border-radius:22px;
+      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
       box-shadow:0 12px 36px rgba(33,58,99,.09); margin:0 auto; max-width:900px;
       padding:12px 14px;
     }
     div[data-testid="stTextInput"] input {
-      background:#f4f7fb; border:1px solid transparent; border-radius:14px;
-      color:#1a2947; font-size:16px; height:52px; padding:0 18px;
+      background:__COR_CAMPO__; border:1px solid transparent; border-radius:14px;
+      color:__COR_TEXTO__; font-size:16px; height:52px; padding:0 18px;
     }
     div[data-testid="stTextInput"] input:focus {
-      background:#fff; border-color:#8db2ff; box-shadow:0 0 0 3px #e7efff;
+      background:__COR_CARTAO__; border-color:__COR_AZUL__; box-shadow:0 0 0 3px #8db2ff33;
     }
     div[data-testid="stFormSubmitButton"] button, div[data-testid="stLinkButton"] a {
       border-radius:12px; font-weight:700; min-height:44px;
@@ -68,19 +97,19 @@ st.markdown(
     div[data-testid="stFormSubmitButton"] button {
       background:linear-gradient(135deg,#246bfe,#594ff5); border:0; color:white;
     }
-    .section-kicker { color:#71809a; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+    .section-kicker { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
     .answer-card {
-      background:linear-gradient(135deg,#eef4ff,#fff); border:1px solid #dce7fb;
+      background:linear-gradient(135deg,__COR_CAMPO__,__COR_CARTAO__); border:1px solid __COR_BORDA__;
       border-radius:20px; margin:16px 0 20px; padding:24px 26px;
     }
-    .answer-label { color:#246bfe; font-size:13px; font-weight:800; margin-bottom:8px; }
+    .answer-label { color:var(--blue); font-size:13px; font-weight:800; margin-bottom:8px; }
     .video-panel {
       background:#111a2b; border-radius:20px; color:white; overflow:hidden;
       padding:18px;
     }
     .soft-note {
-      background:#eef4ff; border:1px solid #dce7fb; border-radius:14px;
-      color:#496385; font-size:13px; padding:13px 16px;
+      background:__COR_CAMPO__; border:1px solid __COR_BORDA__; border-radius:14px;
+      color:var(--muted); font-size:13px; padding:13px 16px;
     }
     @media (max-width:700px) {
       .block-container { padding:.65rem .8rem 1rem; }
@@ -88,16 +117,27 @@ st.markdown(
       .brand-mark { width:44px; height:44px; }
       .brand-name { font-size:28px; }
       .hero-copy { font-size:14px; margin-bottom:14px; }
-      .search-hint { color:#52627b; font-size:14px; line-height:1.5; }
+      .search-hint { color:var(--muted); font-size:14px; line-height:1.5; }
       [data-testid="stSelectbox"] [role="combobox"] { min-height:52px; }
       [data-testid="stSelectbox"] [role="combobox"] * { font-size:16px; }
       div[data-testid="stButton"] button { font-size:16px; min-height:52px; line-height:1.35; }
       div[data-testid="stForm"] { border-radius:16px; padding:10px; }
     }
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
+for marcador, valor in {
+    "__COR_FUNDO__": cor_fundo,
+    "__COR_CARTAO__": cor_cartao,
+    "__COR_TEXTO__": cor_texto,
+    "__COR_SECUNDARIA__": cor_secundaria,
+    "__COR_BORDA__": cor_borda,
+    "__COR_CAMPO__": cor_campo,
+    "__COR_AZUL__": cor_azul,
+    "__COR_TEXTO_BOTAO__": cor_texto_botao,
+}.items():
+    estilo = estilo.replace(marcador, valor)
+st.markdown(estilo, unsafe_allow_html=True)
 
 if "historico_pesquisas" not in st.session_state:
     st.session_state.historico_pesquisas = []
@@ -404,6 +444,15 @@ elif secao_app == "Histórico":
 
 elif secao_app == "Configurações":
     st.markdown("### Configurações")
+    st.markdown("#### Aparência")
+    st.radio(
+        "Tema do Knowix",
+        ["Claro", "Escuro"],
+        key="tema_visual",
+        horizontal=True,
+    )
+    st.caption("A aparência muda imediatamente e fica ativa enquanto esta sessão estiver aberta.")
+    st.markdown("#### Privacidade")
     st.caption("O histórico fica nesta sessão e não é compartilhado com outras pessoas.")
     if st.button("Apagar histórico desta sessão", key="apagar_historico"):
         st.session_state.historico_pesquisas = []
