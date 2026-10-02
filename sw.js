@@ -1,4 +1,4 @@
-const CACHE_NAME = 'knowix-shell-v2';
+const CACHE_NAME = 'knowix-shell-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/knowix-192.png', './icons/knowix-512.png', './icons/knowix-maskable-512.png'];
 
 self.addEventListener('install', event => {

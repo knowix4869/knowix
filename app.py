@@ -31,6 +31,16 @@ st.markdown(
     html, body, [class*="css"] { font-family:'DM Sans',Arial,sans-serif; }
     [data-testid="stTabs"] [role="tablist"] { gap:.35rem; overflow-x:auto; }
     [data-testid="stTabs"] button[role="tab"] { white-space:nowrap; }
+    [data-testid="stSelectbox"] [role="combobox"] {
+      background:#fff; border:1px solid #cbd6e6; border-radius:13px; min-height:48px;
+    }
+    [data-testid="stSelectbox"] [role="combobox"] * { color:#14213d !important; font-size:15px; }
+    div[data-testid="stButton"] button {
+      background:#fff; border:1px solid #cbd6e6; border-radius:12px;
+      color:#14213d !important; font-size:15px; font-weight:650;
+      min-height:48px; white-space:normal;
+    }
+    div[data-testid="stButton"] button:hover { border-color:#246bfe; color:#174fc4 !important; }
     .brand-row { align-items:center; display:flex; gap:14px; justify-content:center; }
     .brand-mark {
       align-items:center; background:linear-gradient(135deg,#3478ff,#7d55f6);
@@ -78,7 +88,10 @@ st.markdown(
       .brand-mark { width:44px; height:44px; }
       .brand-name { font-size:28px; }
       .hero-copy { font-size:14px; margin-bottom:14px; }
-      [data-testid="stTabs"] button[role="tab"] { font-size:13px; padding:.4rem .55rem; }
+      .search-hint { color:#52627b; font-size:14px; line-height:1.5; }
+      [data-testid="stSelectbox"] [role="combobox"] { min-height:52px; }
+      [data-testid="stSelectbox"] [role="combobox"] * { font-size:16px; }
+      div[data-testid="stButton"] button { font-size:16px; min-height:52px; line-height:1.35; }
       div[data-testid="stForm"] { border-radius:16px; padding:10px; }
     }
     </style>
@@ -230,6 +243,7 @@ def preparar_busca_interna(assunto):
     st.session_state.busca_pendente = assunto
     st.session_state.pergunta_principal = assunto
     st.session_state.fonte_aberta = None
+    st.session_state.secao_app = "Pesquisar"
 
 
 def abrir_fonte_no_knowix(fonte):
@@ -319,13 +333,21 @@ def buscar_resultados(assunto, chave_tavily):
     return dados, False
 
 
-tab_pesquisar, tab_nova_aba, tab_historico, tab_config, tab_sobre, tab_sugestoes = st.tabs(
-    ["🔎 Pesquisar", "＋ Nova aba", "◷ Histórico", "⚙ Configurações", "ⓘ Sobre o app", "✉ Sugestões"]
+SECOES_APP = ["Pesquisar", "Nova aba", "Histórico", "Configurações", "Sobre o app", "Sugestões"]
+if "secao_app" not in st.session_state:
+    st.session_state.secao_app = "Pesquisar"
+secao_app = st.selectbox(
+    "Escolha uma seção do Knowix",
+    SECOES_APP,
+    key="secao_app",
+    label_visibility="collapsed",
 )
 
 buscar = False
 pergunta = ""
-with tab_pesquisar:
+buscar_nova = False
+pergunta_nova = ""
+if secao_app == "Pesquisar":
     with st.form("formulario_pesquisa", clear_on_submit=False):
         col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
         with col_busca:
@@ -338,9 +360,9 @@ with tab_pesquisar:
         with col_botao:
             buscar = st.form_submit_button("Pesquisar", use_container_width=True)
 
-with tab_nova_aba:
+elif secao_app == "Nova aba":
     st.markdown("### Abra uma nova pesquisa")
-    st.caption("Essa aba deixa você iniciar outra busca sem apagar o histórico desta sessão.")
+    st.caption("Inicie outra busca sem apagar o histórico desta sessão.")
     with st.form("formulario_nova_aba", clear_on_submit=False):
         pergunta_nova = st.text_input(
             "O que quer pesquisar nesta nova aba?",
@@ -366,27 +388,33 @@ if buscar and pergunta.strip():
     ]
     st.session_state.historico_pesquisas = historico_atualizado[:20]
 
-with tab_historico:
+elif secao_app == "Histórico":
     st.markdown("### Pesquisas recentes")
     if st.session_state.historico_pesquisas:
         for indice, item in enumerate(st.session_state.historico_pesquisas):
-            st.write(f"{indice + 1}. {item}")
+            st.button(
+                f"{indice + 1}. {item}",
+                key=f"historico_{indice}",
+                on_click=preparar_busca_interna,
+                args=(item,),
+                use_container_width=True,
+            )
     else:
         st.caption("Suas pesquisas aparecerão aqui enquanto esta sessão estiver aberta.")
 
-with tab_config:
+elif secao_app == "Configurações":
     st.markdown("### Configurações")
     st.caption("O histórico fica nesta sessão e não é compartilhado com outras pessoas.")
     if st.button("Apagar histórico desta sessão", key="apagar_historico"):
         st.session_state.historico_pesquisas = []
         st.success("Histórico apagado.")
 
-with tab_sobre:
+elif secao_app == "Sobre o app":
     st.markdown("### Sobre o Knowix")
     st.write("O Knowix ajuda a encontrar respostas curtas, fontes para conferir e vídeos relacionados.")
     st.info("VERSÃO BETA — o app está em desenvolvimento. Algumas funções e resultados podem mudar.")
 
-with tab_sugestoes:
+elif secao_app == "Sugestões":
     st.markdown("### Sugestões para o Knowix")
     st.write("Conte sua ideia, problema ou melhoria. Ao clicar no link, o Gmail abrirá uma mensagem para a equipe.")
     with st.form("formulario_sugestao", clear_on_submit=True):
@@ -405,10 +433,11 @@ with tab_sugestoes:
         else:
             st.warning("Escreva sua sugestão antes de continuar.")
 
-st.markdown(
-    '<p class="search-hint">Pesquise temas, perguntas, notícias, ciência, tecnologia e muito mais.</p>',
-    unsafe_allow_html=True,
-)
+if secao_app in ("Pesquisar", "Nova aba"):
+    st.markdown(
+        '<p class="search-hint">Pesquise temas, perguntas, notícias, ciência, tecnologia e muito mais.</p>',
+        unsafe_allow_html=True,
+    )
 
 if buscar:
     assunto = pergunta.strip()
@@ -425,7 +454,7 @@ if buscar:
             st.info(aviso)
 
 resultado_atual = st.session_state.resultado_atual
-if resultado_atual:
+if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
     assunto = resultado_atual["assunto"]
     fontes = resultado_atual["fontes"]
     video = resultado_atual["video"]
