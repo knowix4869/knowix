@@ -279,7 +279,10 @@ def sincronizar_secao_selecionada():
 def sincronizar_tema_selecionado():
     """Guarda Claro/Escuro independentemente do idioma do rótulo visível."""
     idioma = st.session_state.idioma_visual
-    nomes = {"Claro": "Claro", "Escuro": "Dark" if idioma == "English" else "Oscuro" if idioma == "Español" else "Escuro"}
+    nomes = {
+        "Claro": "Light" if idioma == "English" else "Claro",
+        "Escuro": "Dark" if idioma == "English" else "Oscuro" if idioma == "Español" else "Escuro",
+    }
     opcoes = {nome: tema for tema, nome in nomes.items()}
     selecionado = st.session_state.get("tema_display")
     if selecionado in opcoes:
@@ -687,7 +690,7 @@ elif secao_app == "Configurações":
     st.markdown(f"### {texto_ui('settings_title')}")
     st.markdown(f"#### {texto_ui('appearance')}")
     nomes_temas = {
-        "Claro": "Claro",
+        "Claro": "Light" if st.session_state.idioma_visual == "English" else "Claro",
         "Escuro": "Dark" if st.session_state.idioma_visual == "English" else "Oscuro" if st.session_state.idioma_visual == "Español" else "Escuro",
     }
     tema_exibido = nomes_temas[st.session_state.tema_visual]
