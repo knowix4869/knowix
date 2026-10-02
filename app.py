@@ -122,12 +122,11 @@ if buscar:
                                 trecho = trecho[:limite_trecho].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
                         st.write(trecho if trecho else "A página não trouxe um resumo.")
 
-                    links_relacionados = pagina_principal.get("links", [])
                     links_relacionados = [
-                        link for link in links_relacionados
-                        if link.get("title")
-                        and link["title"].casefold() != pagina_principal["title"].casefold()
-                    ][:6]
+                        pagina for pagina in paginas[1:5]
+                        if pagina.get("title")
+                        and pagina["title"].casefold() != pagina_principal["title"].casefold()
+                    ]
                     st.subheader("Sugestões de pesquisas relacionadas")
                     if links_relacionados:
                         colunas = st.columns(2)
