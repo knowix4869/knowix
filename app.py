@@ -41,8 +41,9 @@ estilo = (
     :root { --ink:__COR_TEXTO__; --muted:__COR_SECUNDARIA__; --blue:__COR_AZUL__; --line:__COR_BORDA__; }
     [data-testid="stAppViewContainer"] { background:__COR_FUNDO__; color:var(--ink); }
     [data-testid="stMain"] { color:var(--ink); }
-    [data-testid="stCaptionContainer"] { color:var(--muted); }
-    [data-testid="stCaptionContainer"] p { color:var(--muted) !important; opacity:1; }
+    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {
+      color:var(--muted) !important; opacity:1 !important;
+    }
     [data-testid="stMarkdownContainer"] p { color:var(--ink); }
     a { color:var(--blue); }
     [data-testid="stHeader"] { background:transparent; }
@@ -55,6 +56,9 @@ estilo = (
     [data-testid="stTabs"] button[role="tab"] { white-space:nowrap; }
     [data-testid="stSelectbox"] [role="combobox"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:13px; min-height:48px;
+    }
+    [data-testid="stSelectbox"] input[role="combobox"] {
+      color:__COR_TEXTO__ !important; -webkit-text-fill-color:__COR_TEXTO__ !important; opacity:1 !important;
     }
     [data-testid="stSelectbox"] [role="combobox"] * { color:__COR_TEXTO__ !important; font-size:15px; }
     [data-testid="stSelectbox"] [role="listbox"],
