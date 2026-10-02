@@ -22,8 +22,13 @@ st.markdown(
     :root { --ink:#14213d; --muted:#69758c; --blue:#246bfe; --line:#e2e8f2; }
     [data-testid="stAppViewContainer"] { background:#f4f7fc; color:var(--ink); }
     [data-testid="stHeader"] { background:transparent; }
-    .block-container { max-width:1180px; padding-top:1.25rem; padding-bottom:3rem; }
+    footer, [data-testid="stFooter"], [data-testid="stDecoration"],
+    [data-testid="stToolbar"], [data-testid="stAppDeployButton"],
+    .viewerBadge_container__1QSob, #MainMenu { display:none !important; }
+    .block-container { max-width:1180px; padding-top:1rem; padding-bottom:1.25rem; }
     html, body, [class*="css"] { font-family:'DM Sans',Arial,sans-serif; }
+    [data-testid="stTabs"] [role="tablist"] { gap:.35rem; overflow-x:auto; }
+    [data-testid="stTabs"] button[role="tab"] { white-space:nowrap; }
     .brand-row { align-items:center; display:flex; gap:14px; justify-content:center; }
     .brand-mark {
       align-items:center; background:linear-gradient(135deg,#3478ff,#7d55f6);
@@ -66,13 +71,21 @@ st.markdown(
       color:#496385; font-size:13px; padding:13px 16px;
     }
     @media (max-width:700px) {
-      .block-container { padding-left:1rem; padding-right:1rem; }
-      .brand-name { font-size:30px; }
+      .block-container { padding:.65rem .8rem 1rem; }
+      .brand-row { gap:10px; }
+      .brand-mark { width:44px; height:44px; }
+      .brand-name { font-size:28px; }
+      .hero-copy { font-size:14px; margin-bottom:14px; }
+      [data-testid="stTabs"] button[role="tab"] { font-size:13px; padding:.4rem .55rem; }
+      div[data-testid="stForm"] { border-radius:16px; padding:10px; }
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+if "historico_pesquisas" not in st.session_state:
+    st.session_state.historico_pesquisas = []
 
 st.markdown(
     """
@@ -202,16 +215,85 @@ def resumir_resposta(texto):
     return encurtar(" ".join(frases[:3]), 620)
 
 
-with st.form("formulario_pesquisa", clear_on_submit=False):
-    col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
-    with col_busca:
-        pergunta = st.text_input(
-            "Pesquisa",
-            label_visibility="collapsed",
-            placeholder="🔎  Pesquise qualquer assunto, dúvida ou pergunta...",
+tab_pesquisar, tab_nova_aba, tab_historico, tab_config, tab_sobre, tab_sugestoes = st.tabs(
+    ["🔎 Pesquisar", "＋ Nova aba", "◷ Histórico", "⚙ Configurações", "ⓘ Sobre o app", "✉ Sugestões"]
+)
+
+buscar = False
+pergunta = ""
+with tab_pesquisar:
+    with st.form("formulario_pesquisa", clear_on_submit=False):
+        col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
+        with col_busca:
+            pergunta = st.text_input(
+                "Pesquisa",
+                label_visibility="collapsed",
+                placeholder="🔎  Pesquise qualquer assunto, dúvida ou pergunta...",
+                key="pergunta_principal",
+            )
+        with col_botao:
+            buscar = st.form_submit_button("Pesquisar", use_container_width=True)
+
+with tab_nova_aba:
+    st.markdown("### Abra uma nova pesquisa")
+    st.caption("Essa aba deixa você iniciar outra busca sem apagar o histórico desta sessão.")
+    with st.form("formulario_nova_aba", clear_on_submit=False):
+        pergunta_nova = st.text_input(
+            "O que quer pesquisar nesta nova aba?",
+            placeholder="Digite outra pergunta ou assunto...",
+            key="pergunta_nova_aba",
         )
-    with col_botao:
-        buscar = st.form_submit_button("Pesquisar", use_container_width=True)
+        buscar_nova = st.form_submit_button("Pesquisar nesta aba", use_container_width=True)
+    if buscar_nova:
+        pergunta = pergunta_nova
+        buscar = True
+
+if buscar and pergunta.strip():
+    termo_historico = pergunta.strip()
+    historico_atualizado = [termo_historico] + [
+        item for item in st.session_state.historico_pesquisas
+        if item.casefold() != termo_historico.casefold()
+    ]
+    st.session_state.historico_pesquisas = historico_atualizado[:20]
+
+with tab_historico:
+    st.markdown("### Pesquisas recentes")
+    if st.session_state.historico_pesquisas:
+        for indice, item in enumerate(st.session_state.historico_pesquisas):
+            st.write(f"{indice + 1}. {item}")
+    else:
+        st.caption("Suas pesquisas aparecerão aqui enquanto esta sessão estiver aberta.")
+
+with tab_config:
+    st.markdown("### Configurações")
+    st.caption("O histórico fica nesta sessão e não é compartilhado com outras pessoas.")
+    if st.button("Apagar histórico desta sessão", key="apagar_historico"):
+        st.session_state.historico_pesquisas = []
+        st.success("Histórico apagado.")
+
+with tab_sobre:
+    st.markdown("### Sobre o Knowix")
+    st.write("O Knowix ajuda a encontrar respostas curtas, fontes para conferir e vídeos relacionados.")
+    st.info("VERSÃO BETA — o app está em desenvolvimento. Algumas funções e resultados podem mudar.")
+
+with tab_sugestoes:
+    st.markdown("### Sugestões para o Knowix")
+    st.write("Conte sua ideia, problema ou melhoria. Ao clicar no link, o Gmail abrirá uma mensagem para a equipe.")
+    with st.form("formulario_sugestao", clear_on_submit=True):
+        sugestao_usuario = st.text_area("Sua sugestão", placeholder="Escreva sua ideia aqui...", max_chars=3000)
+        enviar_sugestao = st.form_submit_button("Preparar sugestão no Gmail")
+    if enviar_sugestao:
+        if sugestao_usuario.strip():
+            assunto_email = quote_plus("Sugestão para o Knowix")
+            corpo_email = quote_plus(sugestao_usuario.strip())
+            link_gmail = (
+                "https://mail.google.com/mail/?view=cm&fs=1"
+                f"&to=gustavoferreira3476%40gmail.com&su={assunto_email}&body={corpo_email}"
+            )
+            st.link_button("Abrir o Gmail para enviar", link_gmail, use_container_width=True)
+            st.caption("Por segurança, o Knowix não envia e-mails sozinho: confira a mensagem no Gmail e toque em Enviar.")
+        else:
+            st.warning("Escreva sua sugestão antes de continuar.")
 
 st.markdown(
     '<p class="search-hint">Pesquise temas, perguntas, notícias, ciência, tecnologia e muito mais.</p>',
