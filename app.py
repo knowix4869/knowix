@@ -8,7 +8,7 @@ st.set_page_config(page_title="Knowix", page_icon="🔎")
 st.title("🔎 Knowix")
 st.subheader("Pesquise, confira as fontes e encontre vídeos")
 st.write(
-    "Digite um assunto para ver páginas da Wikipédia em português e encontrar vídeos relacionados no YouTube."
+    "Digite sua pergunta ou assunto para ver um resumo direto, as fontes e vídeos relacionados."
 )
 st.info(
     "As páginas são fontes para você conferir. A Wikipédia pode conter erros e não substitui fontes oficiais ou especializadas."
@@ -23,7 +23,9 @@ def pesquisar_wikipedia(assunto):
         "generator": "search",
         "gsrsearch": assunto,
         "gsrlimit": 5,
-        "prop": "extracts|info",
+        "prop": "extracts|info|links",
+        "plnamespace": 0,
+        "pllimit": 30,
         "exintro": 1,
         "explaintext": 1,
         "inprop": "url",
@@ -72,16 +74,24 @@ if buscar:
                 if not paginas:
                     st.warning("Não encontrei páginas. Tente outras palavras.")
                 else:
-                    st.subheader("Fontes para conferir")
-                    for pagina in paginas:
-                        st.markdown(f"### [{pagina['title']}]({pagina['fullurl']})")
-                        trecho = pagina.get("extract", "").strip()
-                        st.write(trecho if trecho else "A página não trouxe um resumo.")
+                    pagina_principal = paginas[0]
+                    resumo = pagina_principal.get("extract", "").strip()
+
+                    st.subheader("Resposta em resumo")
+                    st.caption("Resumo do resultado mais relevante encontrado na Wikipédia; abra a fonte para ler o contexto completo.")
+                    if resumo:
+                        limite = 650
+                        if len(resumo) > limite:
+                            resumo = resumo[:limite].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+                        st.write(resumo)
+                        st.markdown(f"**Fonte principal:** [{pagina_principal['title']}]({pagina_principal['fullurl']})")
+                    else:
+                        st.info("Não encontrei um resumo curto para este assunto. Confira as fontes abaixo.")
 
                     st.subheader("Vídeos relacionados")
                     busca_youtube = quote_plus(assunto.strip())
                     link_youtube = f"https://www.youtube.com/results?search_query={busca_youtube}"
-                    st.link_button("Ver todos os vídeos no YouTube", link_youtube, type="primary")
+                    st.link_button("Ver vídeos no YouTube", link_youtube, type="primary")
                     try:
                         video = pesquisar_video_youtube(assunto.strip())
                         if video:
@@ -96,11 +106,38 @@ if buscar:
                             if detalhes:
                                 st.caption(" • ".join(detalhes))
                             st.video(f"https://www.youtube.com/watch?v={video['id']}")
-                            st.caption("A prévia é um dos primeiros resultados; quando as visualizações estão disponíveis, mostramos o mais visto entre eles. Isso não garante que seja viral ou correto.")
+                            st.caption("O vídeo é selecionado entre os primeiros resultados; visualizações não garantem que seja viral ou correto.")
                         else:
-                            st.info("Não consegui carregar a prévia agora. Use o botão acima para ver os resultados no YouTube.")
+                            st.info("Não consegui carregar a prévia agora. Use o botão para abrir os resultados no YouTube.")
                     except Exception:
-                        st.info("O YouTube não disponibilizou a prévia agora. Use o botão acima para ver os resultados.")
+                        st.info("O YouTube não disponibilizou a prévia agora. Use o botão para abrir os resultados.")
+
+                    st.subheader("Fontes para conferir")
+                    for pagina in paginas:
+                        st.markdown(f"### [{pagina['title']}]({pagina['fullurl']})")
+                        trecho = pagina.get("extract", "").strip()
+                        if trecho:
+                            limite_trecho = 350
+                            if len(trecho) > limite_trecho:
+                                trecho = trecho[:limite_trecho].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+                        st.write(trecho if trecho else "A página não trouxe um resumo.")
+
+                    links_relacionados = pagina_principal.get("links", [])
+                    links_relacionados = [
+                        link for link in links_relacionados
+                        if link.get("title")
+                        and link["title"].casefold() != pagina_principal["title"].casefold()
+                    ][:6]
+                    st.subheader("Sugestões de pesquisas relacionadas")
+                    if links_relacionados:
+                        colunas = st.columns(2)
+                        for indice, link in enumerate(links_relacionados):
+                            pesquisa_relacionada = quote_plus(link["title"])
+                            url_relacionada = f"https://pt.wikipedia.org/w/index.php?search={pesquisa_relacionada}"
+                            with colunas[indice % 2]:
+                                st.link_button(f"Pesquisar: {link['title']}", url_relacionada, use_container_width=True)
+                    else:
+                        st.caption("Não encontrei sugestões automáticas para esta página.")
             except requests.exceptions.RequestException:
                 st.error("Não consegui acessar a Wikipédia. Confira sua internet e tente novamente.")
             except (ValueError, KeyError):
