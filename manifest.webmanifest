@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Knowix — Pesquisa na web",
+  "short_name": "Knowix",
+  "description": "Pesquise na web e encontre respostas curtas, fontes e vídeos relacionados.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#14213d",
+  "background_color": "#f4f7fc",
+  "categories": ["education", "reference", "search"],
+  "icons": [
+    { "src": "./icons/knowix-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/knowix-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/knowix-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,26 @@
+KNOWIX — ARQUIVOS PARA AVALIAR COMO PWA
+
+O que este pacote faz
+Abre o site público do Knowix dentro de uma janela instalável. A pesquisa continua sendo feita no site hospedado e precisa de internet. Mudanças no site principal aparecem sem reinstalar o atalho/app.
+
+Passo 1 — colocar os arquivos no GitHub
+1. Abra o repositório https://github.com/knowix4869/knowix
+2. Envie index.html, manifest.webmanifest, sw.js e este arquivo para a raiz do repositório; envie os três PNGs para uma subpasta chamada icons.
+3. No repositório, abra Settings > Pages.
+4. Em Build and deployment, escolha Deploy from a branch; selecione main e a pasta /(root); salve.
+5. Espere o GitHub mostrar o endereço publicado. O endereço esperado é https://knowix4869.github.io/knowix/ .
+
+Passo 2 — conferir
+1. Abra o endereço publicado no telefone e no computador.
+2. No Chrome do Android, menu ⋮ > Instalar app ou Adicionar à tela inicial.
+3. No Edge do Windows, menu ⋯ > Aplicativos > Instalar este site como aplicativo.
+4. Para avaliar uma listagem na Microsoft Store, informe o endereço publicado em https://www.pwabuilder.com/ .
+
+Importante
+- Este pacote ainda não é um APK nem um instalador Windows; ele contém os arquivos PWA para hospedar e avaliar.
+- A avaliação do PWABuilder é requisito técnico inicial, não aprovação garantida pela loja.
+- A Microsoft Store exige conta de desenvolvedor e análise. A Google Play exige pacote Android, configuração de associação segura entre o app e o site, conta Play Console e aprovação.
+- Não coloque chaves secretas da Tavily nestes arquivos. A chave deve permanecer somente nos Secrets do Streamlit.
+- O site original do Knowix permanece no Streamlit. Estes arquivos criam apenas a camada instalável.
+
+
