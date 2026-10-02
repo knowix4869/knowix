@@ -23,9 +23,7 @@ def pesquisar_wikipedia(assunto):
         "generator": "search",
         "gsrsearch": assunto,
         "gsrlimit": 5,
-        "prop": "extracts|info|links",
-        "plnamespace": 0,
-        "pllimit": 30,
+        "prop": "extracts|info",
         "exintro": 1,
         "explaintext": 1,
         "inprop": "url",
@@ -60,6 +58,26 @@ def pesquisar_video_youtube(assunto):
     return max(videos, key=lambda video: video.get("view_count") or 0)
 
 
+def escolher_pagina_principal(paginas, assunto):
+    """Prefere a página cujo título corresponde melhor ao assunto pesquisado."""
+    termos = [termo.casefold().strip("?!.,:;") for termo in assunto.split() if len(termo.strip("?!.,:;")) >= 3]
+    if not termos:
+        return paginas[0]
+
+    ultimo_termo = termos[-1]
+
+    def pontuacao(pagina):
+        titulo = pagina.get("title", "").casefold()
+        correspondencias = sum(1 for termo in set(termos) if termo in titulo)
+        inclui_ultimo_termo = ultimo_termo in titulo
+        palavras_titulo = len(titulo.split())
+        palavras_correspondidas = sum(1 for termo in set(termos) if termo in titulo)
+        palavras_extras = max(0, palavras_titulo - palavras_correspondidas)
+        return (correspondencias + (3 if inclui_ultimo_termo else 0) - 2 * palavras_extras, -palavras_titulo)
+
+    return max(paginas, key=pontuacao)
+
+
 with st.form("formulario_pesquisa"):
     assunto = st.text_input("O que você quer pesquisar?", placeholder="Ex.: como funciona a energia solar")
     buscar = st.form_submit_button("Pesquisar")
@@ -74,11 +92,11 @@ if buscar:
                 if not paginas:
                     st.warning("Não encontrei páginas. Tente outras palavras.")
                 else:
-                    pagina_principal = paginas[0]
+                    pagina_principal = escolher_pagina_principal(paginas, assunto.strip())
                     resumo = pagina_principal.get("extract", "").strip()
 
                     st.subheader("Resposta em resumo")
-                    st.caption("Resumo do resultado mais relevante encontrado na Wikipédia; abra a fonte para ler o contexto completo.")
+                    st.caption("Resumo da página cujo título mais corresponde à sua pesquisa; abra a fonte para ler o contexto completo.")
                     if resumo:
                         limite = 650
                         if len(resumo) > limite:
@@ -122,21 +140,20 @@ if buscar:
                                 trecho = trecho[:limite_trecho].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
                         st.write(trecho if trecho else "A página não trouxe um resumo.")
 
-                    links_relacionados = [
-                        pagina for pagina in paginas[1:5]
-                        if pagina.get("title")
-                        and pagina["title"].casefold() != pagina_principal["title"].casefold()
+                    sugestoes = [
+                        f"Características de {assunto.strip()}",
+                        f"Como funciona {assunto.strip()}",
+                        f"Importância de {assunto.strip()}",
+                        f"Curiosidades sobre {assunto.strip()}",
                     ]
                     st.subheader("Sugestões de pesquisas relacionadas")
-                    if links_relacionados:
+                    if sugestoes:
                         colunas = st.columns(2)
-                        for indice, link in enumerate(links_relacionados):
-                            pesquisa_relacionada = quote_plus(link["title"])
+                        for indice, sugestao in enumerate(sugestoes):
+                            pesquisa_relacionada = quote_plus(sugestao)
                             url_relacionada = f"https://pt.wikipedia.org/w/index.php?search={pesquisa_relacionada}"
                             with colunas[indice % 2]:
-                                st.link_button(f"Pesquisar: {link['title']}", url_relacionada, use_container_width=True)
-                    else:
-                        st.caption("Não encontrei sugestões automáticas para esta página.")
+                                st.link_button(sugestao, url_relacionada, use_container_width=True)
             except requests.exceptions.RequestException:
                 st.error("Não consegui acessar a Wikipédia. Confira sua internet e tente novamente.")
             except (ValueError, KeyError):
