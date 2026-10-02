@@ -24,17 +24,6 @@ st.markdown(
     [data-testid="stHeader"] { background:transparent; }
     .block-container { max-width:1180px; padding-top:1.25rem; padding-bottom:3rem; }
     html, body, [class*="css"] { font-family:'DM Sans',Arial,sans-serif; }
-    .browser-bar {
-      align-items:center; background:#fff; border:1px solid #e4e9f1;
-      border-radius:18px; box-shadow:0 5px 22px rgba(32,57,94,.07);
-      display:flex; gap:16px; margin:0 auto 2.2rem; max-width:900px;
-      padding:12px 18px;
-    }
-    .browser-dots { color:#fa665c; font-size:17px; letter-spacing:4px; white-space:nowrap; }
-    .browser-address {
-      background:#f3f6fa; border:1px solid #edf0f5; border-radius:999px;
-      color:#5c6980; flex:1; font-size:13px; padding:9px 18px; text-align:center;
-    }
     .brand-row { align-items:center; display:flex; gap:14px; justify-content:center; }
     .brand-mark {
       align-items:center; background:linear-gradient(135deg,#3478ff,#7d55f6);
@@ -78,8 +67,6 @@ st.markdown(
     }
     @media (max-width:700px) {
       .block-container { padding-left:1rem; padding-right:1rem; }
-      .browser-bar { gap:8px; padding:8px 10px; }
-      .browser-address { font-size:11px; padding:8px; }
       .brand-name { font-size:30px; }
     }
     </style>
@@ -89,11 +76,6 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="browser-bar">
-      <span class="browser-dots">● ● ●</span>
-      <span class="browser-address">🔒 &nbsp; knowix — pesquisa na web</span>
-      <span style="color:#8290a7;font-size:18px">⋮</span>
-    </div>
     <div class="brand-row">
       <div class="brand-mark">⌕</div><div class="brand-name">Knowix</div>
     </div>
