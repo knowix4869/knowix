@@ -1,4 +1,6 @@
 import os
+import re
+from html import escape
 from urllib.parse import quote_plus, urlparse
 
 import requests
@@ -6,18 +8,103 @@ import streamlit as st
 import yt_dlp
 
 
-st.set_page_config(page_title="Knowix", page_icon="🔎")
-st.title("🔎 Knowix")
-st.subheader("Pesquise, confira as fontes e encontre vídeos")
-st.write("Faça uma pergunta para receber uma resposta curta baseada em fontes da web.")
-st.info(
-    "O Knowix prioriza fontes oficiais e especializadas quando possível, e sempre mostra links para você conferir. "
-    "Nenhum mecanismo consegue garantir que toda página seja confiável."
+st.set_page_config(
+    page_title="Knowix — Pesquisa na web",
+    page_icon="🔎",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+    :root { --ink:#14213d; --muted:#69758c; --blue:#246bfe; --line:#e2e8f2; }
+    [data-testid="stAppViewContainer"] { background:#f4f7fc; color:var(--ink); }
+    [data-testid="stHeader"] { background:transparent; }
+    .block-container { max-width:1180px; padding-top:1.25rem; padding-bottom:3rem; }
+    html, body, [class*="css"] { font-family:'DM Sans',Arial,sans-serif; }
+    .browser-bar {
+      align-items:center; background:#fff; border:1px solid #e4e9f1;
+      border-radius:18px; box-shadow:0 5px 22px rgba(32,57,94,.07);
+      display:flex; gap:16px; margin:0 auto 2.2rem; max-width:900px;
+      padding:12px 18px;
+    }
+    .browser-dots { color:#fa665c; font-size:17px; letter-spacing:4px; white-space:nowrap; }
+    .browser-address {
+      background:#f3f6fa; border:1px solid #edf0f5; border-radius:999px;
+      color:#5c6980; flex:1; font-size:13px; padding:9px 18px; text-align:center;
+    }
+    .brand-row { align-items:center; display:flex; gap:14px; justify-content:center; }
+    .brand-mark {
+      align-items:center; background:linear-gradient(135deg,#3478ff,#7d55f6);
+      border-radius:16px; box-shadow:0 9px 22px rgba(54,105,240,.25);
+      color:#fff; display:flex; font-size:25px; height:52px; justify-content:center; width:52px;
+    }
+    .brand-name { color:#17233f; font-size:35px; font-weight:800; letter-spacing:-1.5px; }
+    .hero-copy { color:#71809a; font-size:15px; margin:7px 0 20px; text-align:center; }
+    .search-hint { color:#8490a5; font-size:12px; margin:10px 4px 0; text-align:center; }
+    div[data-testid="stForm"] {
+      background:#fff; border:1px solid #e1e7f0; border-radius:22px;
+      box-shadow:0 12px 36px rgba(33,58,99,.09); margin:0 auto; max-width:900px;
+      padding:12px 14px;
+    }
+    div[data-testid="stTextInput"] input {
+      background:#f4f7fb; border:1px solid transparent; border-radius:14px;
+      color:#1a2947; font-size:16px; height:52px; padding:0 18px;
+    }
+    div[data-testid="stTextInput"] input:focus {
+      background:#fff; border-color:#8db2ff; box-shadow:0 0 0 3px #e7efff;
+    }
+    div[data-testid="stFormSubmitButton"] button, div[data-testid="stLinkButton"] a {
+      border-radius:12px; font-weight:700; min-height:44px;
+    }
+    div[data-testid="stFormSubmitButton"] button {
+      background:linear-gradient(135deg,#246bfe,#594ff5); border:0; color:white;
+    }
+    .section-kicker { color:#71809a; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+    .answer-card {
+      background:linear-gradient(135deg,#eef4ff,#fff); border:1px solid #dce7fb;
+      border-radius:20px; margin:16px 0 20px; padding:24px 26px;
+    }
+    .answer-label { color:#246bfe; font-size:13px; font-weight:800; margin-bottom:8px; }
+    .video-panel {
+      background:#111a2b; border-radius:20px; color:white; overflow:hidden;
+      padding:18px;
+    }
+    .soft-note {
+      background:#eef4ff; border:1px solid #dce7fb; border-radius:14px;
+      color:#496385; font-size:13px; padding:13px 16px;
+    }
+    @media (max-width:700px) {
+      .block-container { padding-left:1rem; padding-right:1rem; }
+      .browser-bar { gap:8px; padding:8px 10px; }
+      .browser-address { font-size:11px; padding:8px; }
+      .brand-name { font-size:30px; }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="browser-bar">
+      <span class="browser-dots">● ● ●</span>
+      <span class="browser-address">🔒 &nbsp; knowix — pesquisa na web</span>
+      <span style="color:#8290a7;font-size:18px">⋮</span>
+    </div>
+    <div class="brand-row">
+      <div class="brand-mark">⌕</div><div class="brand-name">Knowix</div>
+    </div>
+      <p class="hero-copy">Uma pergunta. Uma resposta clara. Descubra páginas e vídeos sobre o assunto.</p>
+    """,
+    unsafe_allow_html=True,
 )
 
 
 def obter_chave_tavily():
-    """Lê a chave salva com segurança nas configurações do Streamlit."""
+    """Lê a chave guardada nas configurações privadas do Streamlit."""
     try:
         return st.secrets.get("TAVILY_API_KEY", "")
     except Exception:
@@ -25,7 +112,7 @@ def obter_chave_tavily():
 
 
 def pesquisar_na_web(pergunta, chave):
-    """Pede ao Tavily uma resposta curta e resultados de busca com links."""
+    """Busca em páginas públicas indexadas na web aberta."""
     url = "https://api.tavily.com/search"
     cabecalhos = {
         "Authorization": f"Bearer {chave}",
@@ -33,50 +120,35 @@ def pesquisar_na_web(pergunta, chave):
     }
     dados = {
         "query": (
-            "Pesquise a pergunta a seguir e escreva a resposta em português brasileiro: "
-            f"{pergunta}"
+            f"{pergunta}. Responda de forma direta e em português brasileiro."
         ),
         "topic": "general",
         "search_depth": "basic",
-        "max_results": 5,
+        "max_results": 8,
         "include_answer": "basic",
         "include_raw_content": False,
-        "include_domains": [
-            "gov.br",
-            "edu.br",
-            "fiocruz.br",
-            "scielo.br",
-            "who.int",
-            "un.org",
-            "europa.eu",
-            "nasa.gov",
-            "nih.gov",
-            "cdc.gov",
-            "britannica.com",
-        ],
-        "include_domains_mode": "prefer",
         "country": "brazil",
         "language": "pt",
-        "filter_by_language": True,
+        "filter_by_language": False,
         "safe_search": True,
     }
-    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=30)
+    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=35)
     if resposta.status_code == 401:
-        raise ValueError("A chave de busca não foi aceita. Confira a configuração TAVILY_API_KEY.")
+        raise ValueError("A chave de busca não foi aceita. Confira TAVILY_API_KEY nas configurações.")
     if resposta.status_code == 429:
-        raise ValueError("O limite de buscas foi atingido ou o serviço está ocupado. Tente mais tarde.")
+        raise ValueError("O limite de buscas foi atingido. Tente novamente mais tarde.")
     resposta.raise_for_status()
     return resposta.json()
 
 
 def pesquisar_wikipedia(assunto):
-    """Busca páginas e trechos na Wikipédia para o modo sem chave de busca."""
+    """Usa a Wikipédia em português como modo alternativo sem chave Tavily."""
     url = "https://pt.wikipedia.org/w/api.php"
     parametros = {
         "action": "query",
         "generator": "search",
         "gsrsearch": assunto,
-        "gsrlimit": 5,
+        "gsrlimit": 6,
         "prop": "extracts|info",
         "exintro": 1,
         "explaintext": 1,
@@ -84,15 +156,17 @@ def pesquisar_wikipedia(assunto):
         "format": "json",
         "formatversion": 2,
     }
-    cabecalhos = {"User-Agent": "Knowix/1.0 (aplicativo educacional)"}
-    resposta = requests.get(url, params=parametros, headers=cabecalhos, timeout=20)
+    resposta = requests.get(
+        url,
+        params=parametros,
+        headers={"User-Agent": "Knowix/2.0 (aplicativo de pesquisa)"},
+        timeout=20,
+    )
     resposta.raise_for_status()
-    dados = resposta.json()
-    return dados.get("query", {}).get("pages", [])
+    return resposta.json().get("query", {}).get("pages", [])
 
 
 def escolher_pagina_principal(paginas, assunto):
-    """Prefere a página cujo título corresponde melhor ao assunto pesquisado."""
     termos = [
         termo.casefold().strip("?!.,:;")
         for termo in assunto.split()
@@ -101,188 +175,201 @@ def escolher_pagina_principal(paginas, assunto):
     if not termos:
         return paginas[0]
 
-    ultimo_termo = termos[-1]
-
     def pontuacao(pagina):
         titulo = pagina.get("title", "").casefold()
         correspondencias = sum(1 for termo in set(termos) if termo in titulo)
-        inclui_ultimo_termo = ultimo_termo in titulo
-        palavras_titulo = len(titulo.split())
-        palavras_extras = max(0, palavras_titulo - correspondencias)
-        return (
-            correspondencias + (3 if inclui_ultimo_termo else 0) - 2 * palavras_extras,
-            -palavras_titulo,
-        )
+        palavras_extras = max(0, len(titulo.split()) - correspondencias)
+        return correspondencias - 2 * palavras_extras
 
     return max(paginas, key=pontuacao)
 
 
 def pesquisar_video_youtube(assunto):
-    """Retorna o primeiro vídeo relevante sem baixar detalhes de todos os resultados."""
+    """Escolhe o vídeo mais visto entre os primeiros resultados relevantes."""
     opcoes = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
-        "extract_flat": True,
+        "extract_flat": False,
         "ignoreerrors": True,
         "noplaylist": True,
+        "socket_timeout": 12,
     }
     with yt_dlp.YoutubeDL(opcoes) as youtube:
-        resultado = youtube.extract_info(f"ytsearch5:{assunto}", download=False)
-
-    videos = [video for video in (resultado or {}).get("entries", []) if video and video.get("id")]
+        resultado = youtube.extract_info(f"ytsearch8:{assunto}", download=False)
+    videos = [
+        video
+        for video in (resultado or {}).get("entries", [])
+        if video and video.get("id")
+    ]
     if not videos:
         return None
-    return videos[0]
+    return max(videos, key=lambda video: video.get("view_count") or 0)
 
 
-with st.form("formulario_pesquisa"):
-    pergunta = st.text_input(
-        "O que você quer saber?",
-        placeholder="Ex.: quais são os benefícios da energia solar?",
-    )
-    buscar = st.form_submit_button("Pesquisar")
+def encurtar(texto, limite):
+    texto = " ".join((texto or "").split())
+    if len(texto) <= limite:
+        return texto
+    return texto[:limite].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+
+
+with st.form("formulario_pesquisa", clear_on_submit=False):
+    col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
+    with col_busca:
+        pergunta = st.text_input(
+            "Pesquisa",
+            label_visibility="collapsed",
+            placeholder="🔎  Pesquise qualquer assunto, dúvida ou pergunta...",
+        )
+    with col_botao:
+        buscar = st.form_submit_button("Pesquisar", use_container_width=True)
+
+st.markdown(
+    '<p class="search-hint">Pesquise temas, perguntas, notícias, ciência, tecnologia e muito mais.</p>',
+    unsafe_allow_html=True,
+)
 
 if buscar:
-    if not pergunta.strip():
-        st.warning("Digite uma pergunta antes de pesquisar.")
+    assunto = pergunta.strip()
+    if not assunto:
+        st.warning("Digite um assunto para começar a pesquisa.")
     else:
         chave_tavily = obter_chave_tavily()
-        with st.spinner("Pesquisando na web e reunindo fontes..."):
-            try:
-                if chave_tavily:
-                    modo_web = True
-                    try:
-                        resultado_web = pesquisar_na_web(pergunta.strip(), chave_tavily)
-                        resposta_direta = resultado_web.get("answer", "").strip()
-                        resultados = resultado_web.get("results", [])
+        resposta_direta = ""
+        fontes = []
+        modo_web = bool(chave_tavily)
+
+        if chave_tavily:
+            with st.spinner("Pesquisando na web aberta..."):
+                try:
+                    resultado_web = pesquisar_na_web(assunto, chave_tavily)
+                    resposta_direta = (resultado_web.get("answer") or "").strip()
+                    for item in resultado_web.get("results", []):
+                        url_fonte = item.get("url", "")
+                        if urlparse(url_fonte).scheme in {"http", "https"}:
+                            fontes.append(
+                                {
+                                    "title": item.get("title") or "Abrir resultado",
+                                    "url": url_fonte,
+                                    "content": item.get("content", ""),
+                                    "domain": urlparse(url_fonte).netloc.removeprefix("www."),
+                                }
+                            )
+                except (ValueError, requests.exceptions.RequestException) as erro:
+                    st.warning(f"{erro} Ainda vou tentar encontrar um vídeo e sugestões.")
+        else:
+            with st.spinner("Pesquisando na Wikipédia em português..."):
+                try:
+                    paginas = pesquisar_wikipedia(assunto)
+                    if paginas:
+                        pagina = escolher_pagina_principal(paginas, assunto)
+                        resposta_direta = (pagina.get("extract") or "").strip()
                         fontes = [
                             {
-                                "title": item.get("title") or "Fonte da web",
-                                "url": item.get("url", ""),
-                                "content": item.get("content", ""),
-                                "domain": urlparse(item.get("url", "")).netloc,
-                            }
-                            for item in resultados
-                            if item.get("url")
-                        ]
-                    except ValueError as erro:
-                        st.warning(f"{erro} Vou tentar mostrar os vídeos mesmo assim.")
-                        resposta_direta = ""
-                        fontes = []
-                    except requests.exceptions.RequestException:
-                        st.warning("A busca de fontes está indisponível agora. Vou tentar mostrar os vídeos mesmo assim.")
-                        resposta_direta = ""
-                        fontes = []
-                else:
-                    paginas = pesquisar_wikipedia(pergunta.strip())
-                    if not paginas:
-                        st.warning("Não encontrei fontes. Tente reformular a pergunta.")
-                        fontes = []
-                        resposta_direta = ""
-                    else:
-                        pagina_principal = escolher_pagina_principal(paginas, pergunta.strip())
-                        resposta_direta = pagina_principal.get("extract", "").strip()
-                        fontes = [
-                            {
-                                "title": pagina.get("title", "Fonte"),
-                                "url": pagina.get("fullurl", ""),
-                                "content": pagina.get("extract", ""),
+                                "title": item.get("title", "Abrir resultado"),
+                                "url": item.get("fullurl", ""),
+                                "content": item.get("extract", ""),
                                 "domain": "pt.wikipedia.org",
                             }
-                            for pagina in paginas
-                            if pagina.get("fullurl")
+                            for item in paginas
+                            if item.get("fullurl")
                         ]
-                    modo_web = False
+                except requests.exceptions.RequestException:
+                    st.warning("A pesquisa de fontes está indisponível no momento.")
+            st.info(
+                "A pesquisa geral ainda não está configurada. No momento, mostro resultados da "
+                "Wikipédia em português."
+            )
 
-                if not chave_tavily:
-                    st.warning(
-                        "A busca na web ainda não está configurada. Mostrando a Wikipédia por enquanto; "
-                        "adicione uma chave Tavily nas configurações do Streamlit para buscar em outros sites."
-                    )
+        assunto_seguro = escape(assunto)
+        st.markdown(
+            f'<div class="section-kicker">Resultados para “{assunto_seguro}”</div>',
+            unsafe_allow_html=True,
+        )
 
+        col_resposta, col_video = st.columns([1.1, 0.9], gap="large")
+        with col_resposta:
+            with st.container(border=True):
+                st.markdown('<div class="answer-label">✦ RESPOSTA RÁPIDA</div>', unsafe_allow_html=True)
                 if resposta_direta:
-                    st.subheader("Resposta direta")
-                    limite = 1200 if modo_web else 650
-                    if len(resposta_direta) > limite:
-                        resposta_direta = resposta_direta[:limite].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
-                    st.write(resposta_direta)
-                    if modo_web:
-                        st.caption(
-                            "Resposta gerada a partir dos resultados da busca. Confira as fontes antes de usar "
-                            "informações importantes."
-                        )
-                    elif fontes:
-                        st.caption("Resumo da página cujo título mais corresponde à pergunta.")
+                    st.markdown(encurtar(resposta_direta, 1100))
+                    st.caption("Resumo automático da busca. Abra as páginas abaixo para conferir os detalhes.")
+                else:
+                    st.write("Não consegui montar uma resposta direta agora. Veja os sites encontrados abaixo.")
 
-                st.subheader("Vídeos relacionados")
-                busca_youtube = quote_plus(pergunta.strip())
-                link_youtube = f"https://www.youtube.com/results?search_query={busca_youtube}"
-                st.link_button("Ver vídeos no YouTube", link_youtube, type="primary")
+        with col_video:
+            with st.container(border=True):
+                st.markdown('<div class="section-kicker">▶ VÍDEO EM DESTAQUE</div>', unsafe_allow_html=True)
                 try:
-                    video = pesquisar_video_youtube(pergunta.strip())
+                    video = pesquisar_video_youtube(assunto)
                     if video:
                         video_id = video["id"]
-                        link_video = f"https://www.youtube.com/watch?v={video_id}"
-                        st.markdown(f"**{video.get('title', 'Vídeo relacionado')}**")
-                        canal = video.get("channel") or video.get("uploader")
-                        visualizacoes = video.get("view_count")
-                        detalhes = []
-                        if canal:
-                            detalhes.append(f"Canal: {canal}")
-                        if visualizacoes is not None:
-                            detalhes.append(f"Visualizações: {visualizacoes:,}".replace(",", "."))
-                        if detalhes:
-                            st.caption(" • ".join(detalhes))
-                        st.link_button("Assistir vídeo selecionado", link_video)
-                        st.image(
-                            f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
-                            caption="Prévia do vídeo. Clique abaixo para assistir no YouTube.",
-                            width=480,
-                        )
+                        if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+                            st.markdown(f"**{encurtar(video.get('title', 'Vídeo relacionado'), 90)}**")
+                            canal = video.get("channel") or video.get("uploader")
+                            if canal:
+                                st.caption(f"Canal: {canal}")
+                            st.iframe(
+                                f"https://www.youtube-nocookie.com/embed/{video_id}?rel=0&playsinline=1",
+                                height=300,
+                            )
+                            st.link_button(
+                                "Abrir vídeo no YouTube",
+                                f"https://www.youtube.com/watch?v={video_id}",
+                                use_container_width=True,
+                            )
+                        else:
+                            st.info("Não consegui abrir a prévia deste vídeo. Veja os resultados no YouTube.")
                     else:
-                        st.info("Não consegui carregar a prévia agora. Use o botão para abrir os resultados no YouTube.")
+                        st.info("Ainda não encontrei uma prévia para este assunto.")
                 except Exception:
-                    st.info("O YouTube não disponibilizou a prévia agora. Use o botão para abrir os resultados.")
+                    st.info("A prévia está indisponível agora. Você ainda pode buscar vídeos no YouTube.")
+                st.link_button(
+                    "Ver mais vídeos",
+                    f"https://www.youtube.com/results?search_query={quote_plus(assunto)}",
+                    use_container_width=True,
+                )
 
-                st.subheader("Fontes para conferir (principais)")
-                if fontes:
-                    for fonte in fontes[:3]:
-                        titulo = (fonte.get("title") or "Fonte da web").strip()
-                        if len(titulo) > 72:
-                            titulo = titulo[:69].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
-                        st.markdown(f"**[{titulo}]({fonte['url']})**")
+        st.markdown("### 🌐 Sites encontrados")
+        if fontes:
+            colunas_sites = st.columns(2, gap="medium")
+            for indice, fonte in enumerate(fontes[:8]):
+                with colunas_sites[indice % 2]:
+                    with st.container(border=True):
                         if fonte.get("domain"):
-                            st.caption(fonte["domain"])
-                        trecho = (fonte.get("content") or "").strip()
+                            st.caption(f"●  {fonte['domain']}")
+                        st.link_button(
+                            encurtar(fonte.get("title", "Abrir resultado"), 76),
+                            fonte["url"],
+                            use_container_width=True,
+                        )
+                        trecho = encurtar(fonte.get("content", ""), 210)
                         if trecho:
-                            limite_trecho = 180
-                            if len(trecho) > limite_trecho:
-                                trecho = trecho[:limite_trecho].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
                             st.write(trecho)
-                else:
-                    st.info("Não encontrei fontes para mostrar.")
+        else:
+            st.info("Não encontrei páginas para esta pergunta.")
 
-                sugestoes = [
-                    f"Principais fatos sobre {pergunta.strip()}",
-                    f"Como funciona {pergunta.strip()}",
-                    f"Benefícios e riscos de {pergunta.strip()}",
-                    f"História de {pergunta.strip()}",
-                    f"Impactos de {pergunta.strip()}",
-                    f"Novidades sobre {pergunta.strip()}",
-                ]
-                st.subheader("Sugestões de pesquisas relacionadas")
-                colunas = st.columns(2)
-                for indice, sugestao in enumerate(sugestoes):
-                    pesquisa_relacionada = quote_plus(sugestao)
-                    url_relacionada = f"https://www.google.com/search?q={pesquisa_relacionada}"
-                    with colunas[indice % 2]:
-                        st.link_button(sugestao, url_relacionada, use_container_width=True)
-            except ValueError as erro:
-                st.error(str(erro))
-            except requests.exceptions.RequestException:
-                st.error("Não consegui acessar o serviço de busca. Confira a conexão e tente novamente.")
-            except (KeyError, TypeError):
-                st.error("A resposta da busca veio em um formato inesperado. Tente novamente.")
+        sugestoes = [
+            f"Principais fatos sobre {assunto}",
+            f"Como funciona {assunto}",
+            f"Vantagens e desvantagens de {assunto}",
+            f"História de {assunto}",
+            f"Novidades sobre {assunto}",
+            f"Vídeos e explicações sobre {assunto}",
+        ]
+        st.markdown("### ✨ Continue explorando")
+        st.caption("Sugestões de buscas relacionadas")
+        colunas_sugestoes = st.columns(3, gap="small")
+        for indice, sugestao in enumerate(sugestoes):
+            with colunas_sugestoes[indice % 3]:
+                st.link_button(
+                    sugestao,
+                    f"https://www.google.com/search?q={quote_plus(sugestao)}",
+                    use_container_width=True,
+                )
 
-st.caption("Compare as fontes, confira a data e consulte um profissional para decisões importantes.")
+st.markdown(
+    '<div class="soft-note">O Knowix pesquisa páginas públicas indexadas na web. Compare as fontes antes de usar informações importantes.</div>',
+    unsafe_allow_html=True,
+)
