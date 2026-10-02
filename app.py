@@ -214,6 +214,12 @@ def encurtar(texto, limite):
     return texto[:limite].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
 
 
+def resumir_resposta(texto):
+    texto = " ".join((texto or "").split())
+    frases = re.split(r"(?<=[.!?])\s+", texto)
+    return encurtar(" ".join(frases[:3]), 620)
+
+
 with st.form("formulario_pesquisa", clear_on_submit=False):
     col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
     with col_busca:
@@ -293,7 +299,7 @@ if buscar:
             with st.container(border=True):
                 st.markdown('<div class="answer-label">✦ RESPOSTA RÁPIDA</div>', unsafe_allow_html=True)
                 if resposta_direta:
-                    st.markdown(encurtar(resposta_direta, 1100))
+                    st.markdown(resumir_resposta(resposta_direta))
                     st.caption("Resumo automático da busca. Abra as páginas abaixo para conferir os detalhes.")
                 else:
                     st.write("Não consegui montar uma resposta direta agora. Veja os sites encontrados abaixo.")
@@ -302,14 +308,20 @@ if buscar:
             with st.container(border=True):
                 st.markdown('<div class="section-kicker">▶ VÍDEO EM DESTAQUE</div>', unsafe_allow_html=True)
                 try:
-                    video = pesquisar_video_youtube(assunto)
+                    video = pesquisar_video_youtube(f"{assunto} em português")
                     if video:
                         video_id = video["id"]
                         if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
                             st.markdown(f"**{encurtar(video.get('title', 'Vídeo relacionado'), 90)}**")
                             canal = video.get("channel") or video.get("uploader")
                             if canal:
-                                st.caption(f"Canal: {canal}")
+                                visualizacoes = video.get("view_count")
+                                detalhes_video = [f"Canal: {canal}"]
+                                if visualizacoes is not None:
+                                    detalhes_video.append(
+                                        f"Visualizações: {visualizacoes:,}".replace(",", ".")
+                                    )
+                                st.caption(" • ".join(detalhes_video))
                             st.iframe(
                                 f"https://www.youtube-nocookie.com/embed/{video_id}?rel=0&playsinline=1",
                                 height=300,
@@ -350,13 +362,19 @@ if buscar:
         else:
             st.info("Não encontrei páginas para esta pergunta.")
 
+        tema = re.sub(
+            r"^(o que é|o que e|como funciona|quem foi|quem é|quem e|qual é|qual e|benefícios de|beneficios de)\s+",
+            "",
+            assunto,
+            flags=re.IGNORECASE,
+        ).strip(" ?!")
         sugestoes = [
-            f"Principais fatos sobre {assunto}",
-            f"Como funciona {assunto}",
-            f"Vantagens e desvantagens de {assunto}",
-            f"História de {assunto}",
-            f"Novidades sobre {assunto}",
-            f"Vídeos e explicações sobre {assunto}",
+            f"Principais fatos sobre {tema}",
+            f"Aplicações de {tema}",
+            f"Vantagens e desvantagens de {tema}",
+            f"História e evolução de {tema}",
+            f"Novidades sobre {tema}",
+            f"Vídeos explicativos sobre {tema}",
         ]
         st.markdown("### ✨ Continue explorando")
         st.caption("Sugestões de buscas relacionadas")
