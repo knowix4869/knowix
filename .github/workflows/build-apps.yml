@@ -26,7 +26,7 @@ jobs:
       - name: Build Knowix.exe
         working-directory: Knowix-Apps/windows
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name Knowix knowix_desktop.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Knowix-Windows
           path: Knowix-Apps/windows/dist/Knowix.exe
@@ -44,7 +44,7 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v4
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.9"
           cache-provider: basic
@@ -53,7 +53,7 @@ jobs:
       - name: Build test APK
         working-directory: Knowix-Apps/android
         run: gradle --no-daemon assembleDebug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Knowix-Android-debug
           path: Knowix-Apps/android/app/build/outputs/apk/debug/app-debug.apk
