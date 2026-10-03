@@ -167,7 +167,10 @@ TRADUCOES_UI = {
         "privacy": "Privacidade", "history_privacy": "O histórico fica nesta sessão e não é compartilhado com outras pessoas.",
         "clear_history": "Apagar histórico desta sessão", "history_cleared": "Histórico apagado.",
         "about_title": "Sobre o Knowix", "about_text": "O Knowix ajuda a encontrar respostas curtas, fontes para conferir e vídeos relacionados.",
-        "beta": "VERSÃO BETA — o app está em desenvolvimento. Algumas funções e resultados podem mudar.",
+        "beta": "VERSÃO ALPHA — o app está em fase inicial de testes. Algumas funções e resultados podem mudar.",
+        "more_videos_loading": "Buscando outros vídeos relacionados...",
+        "more_videos_results": "Mais vídeos sobre este assunto",
+        "more_videos_empty": "Não encontrei outros vídeos agora. Tente novamente mais tarde.",
         "suggestions_title": "Sugestões para o Knowix", "suggestions_text": "Conte sua ideia, problema ou melhoria. Ao clicar no link, o Gmail abrirá uma mensagem para a equipe.",
         "suggestion_label": "Sua sugestão", "suggestion_placeholder": "Escreva sua ideia aqui...",
         "prepare_email": "Preparar sugestão no Gmail", "write_suggestion": "Escreva sua sugestão antes de continuar.",
@@ -202,7 +205,10 @@ TRADUCOES_UI = {
         "privacy": "Privacy", "history_privacy": "History stays in this session and is not shared with other people.",
         "clear_history": "Clear this session's history", "history_cleared": "History cleared.",
         "about_title": "About Knowix", "about_text": "Knowix helps you find concise answers, sources to check, and related videos.",
-        "beta": "BETA VERSION — the app is under development. Some features and results may change.",
+        "beta": "ALPHA VERSION — the app is in early testing. Some features and results may change.",
+        "more_videos_loading": "Searching for more related videos...",
+        "more_videos_results": "More videos about this topic",
+        "more_videos_empty": "I couldn't find more videos right now. Try again later.",
         "suggestions_title": "Suggestions for Knowix", "suggestions_text": "Share an idea, issue, or improvement. Gmail will open a message to the team.",
         "suggestion_label": "Your suggestion", "suggestion_placeholder": "Write your idea here...", "prepare_email": "Prepare suggestion in Gmail",
         "write_suggestion": "Write your suggestion before continuing.", "open_email": "Open Gmail to send",
@@ -236,7 +242,10 @@ TRADUCOES_UI = {
         "privacy": "Privacidad", "history_privacy": "El historial permanece en esta sesión y no se comparte con otras personas.",
         "clear_history": "Borrar el historial de esta sesión", "history_cleared": "Historial borrado.",
         "about_title": "Acerca de Knowix", "about_text": "Knowix te ayuda a encontrar respuestas breves, fuentes para consultar y videos relacionados.",
-        "beta": "VERSIÓN BETA — la app está en desarrollo. Algunas funciones y resultados pueden cambiar.",
+        "beta": "VERSIÓN ALPHA — la app está en fase inicial de pruebas. Algunas funciones y resultados pueden cambiar.",
+        "more_videos_loading": "Buscando más videos relacionados...",
+        "more_videos_results": "Más videos sobre este tema",
+        "more_videos_empty": "No encontré más videos ahora. Inténtalo de nuevo más tarde.",
         "suggestions_title": "Sugerencias para Knowix", "suggestions_text": "Cuéntanos tu idea, problema o mejora. Gmail abrirá un mensaje para el equipo.",
         "suggestion_label": "Tu sugerencia", "suggestion_placeholder": "Escribe tu idea aquí...", "prepare_email": "Preparar sugerencia en Gmail",
         "write_suggestion": "Escribe tu sugerencia antes de continuar.", "open_email": "Abrir Gmail para enviar",
@@ -367,6 +376,12 @@ if "cache_buscas" not in st.session_state:
     st.session_state.cache_buscas = {}
 if "resultado_atual" not in st.session_state:
     st.session_state.resultado_atual = None
+if "videos_adicionais" not in st.session_state:
+    st.session_state.videos_adicionais = []
+if "assunto_videos_adicionais" not in st.session_state:
+    st.session_state.assunto_videos_adicionais = None
+if "erro_videos_adicionais" not in st.session_state:
+    st.session_state.erro_videos_adicionais = False
 if "fonte_aberta" not in st.session_state:
     st.session_state.fonte_aberta = None
 if "busca_pendente" not in st.session_state:
@@ -472,27 +487,42 @@ def escolher_pagina_principal(paginas, assunto):
     return max(paginas, key=pontuacao)
 
 
-def pesquisar_video_youtube(assunto):
-    """Escolhe o vídeo mais visto entre os primeiros resultados relevantes."""
+def pesquisar_videos_youtube(assunto, limite=8, rapido=False):
+    """Retorna vídeos do YouTube para mostrar prévias dentro do Knowix."""
     opcoes = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
-        "extract_flat": False,
+        "extract_flat": "in_playlist" if rapido else False,
         "ignoreerrors": True,
         "noplaylist": True,
         "socket_timeout": 12,
     }
     with yt_dlp.YoutubeDL(opcoes) as youtube:
-        resultado = youtube.extract_info(f"ytsearch8:{assunto}", download=False)
-    videos = [
-        video
-        for video in (resultado or {}).get("entries", [])
-        if video and video.get("id")
-    ]
+        resultado = youtube.extract_info(f"ytsearch{limite}:{assunto}", download=False)
+    videos = []
+    vistos = set()
+    for item in (resultado or {}).get("entries", []):
+        if not item or not re.fullmatch(r"[A-Za-z0-9_-]{11}", item.get("id", "")):
+            continue
+        if item["id"] in vistos:
+            continue
+        vistos.add(item["id"])
+        videos.append({
+            "id": item["id"],
+            "title": item.get("title") or texto_ui("related_video"),
+            "channel": item.get("channel") or item.get("uploader"),
+            "view_count": item.get("view_count"),
+        })
+    return sorted(videos, key=lambda item: item.get("view_count") or 0, reverse=True)
+
+
+def pesquisar_video_youtube(assunto):
+    """Escolhe o vídeo mais visto entre os primeiros resultados relevantes."""
+    videos = pesquisar_videos_youtube(assunto)
     if not videos:
         return None
-    return max(videos, key=lambda video: video.get("view_count") or 0)
+    return videos[0]
 
 
 def encurtar(texto, limite):
@@ -665,6 +695,9 @@ if busca_pendente:
     st.session_state.busca_pendente = None
 
 if buscar and pergunta.strip():
+    st.session_state.videos_adicionais = []
+    st.session_state.assunto_videos_adicionais = None
+    st.session_state.erro_videos_adicionais = False
     termo_historico = pergunta.strip()
     historico_atualizado = [termo_historico] + [
         item for item in st.session_state.historico_pesquisas
@@ -805,7 +838,7 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
             with st.container(border=True):
                 st.markdown(f'<div class="section-kicker">{texto_ui("featured_video")}</div>', unsafe_allow_html=True)
                 if video and re.fullmatch(r"[A-Za-z0-9_-]{11}", video.get("id", "")):
-                    st.markdown(f"**{encurtar(video.get('title', texto_ui('related_video')), 90)}**")
+                    st.text(encurtar(video.get("title", texto_ui("related_video")), 90))
                     detalhes_video = []
                     if video.get("channel"):
                         detalhes_video.append(f"{texto_ui('channel')}: {video['channel']}")
@@ -822,8 +855,38 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                 else:
                     st.info(texto_ui("no_video"))
                 if st.button(texto_ui("more_videos"), key="mais_videos_interno"):
-                    preparar_busca_interna(f"vídeos sobre {assunto}")
-                    st.rerun()
+                    with st.spinner(texto_ui("more_videos_loading")):
+                        try:
+                            videos_encontrados = pesquisar_videos_youtube(
+                                f"{assunto} em português", limite=12, rapido=True
+                            )
+                            video_atual_id = (video or {}).get("id")
+                            st.session_state.videos_adicionais = [
+                                item for item in videos_encontrados
+                                if item["id"] != video_atual_id
+                            ][:6]
+                            st.session_state.erro_videos_adicionais = False
+                        except Exception:
+                            st.session_state.videos_adicionais = []
+                            st.session_state.erro_videos_adicionais = True
+                        st.session_state.assunto_videos_adicionais = assunto
+
+        if st.session_state.assunto_videos_adicionais == assunto:
+            if st.session_state.erro_videos_adicionais or not st.session_state.videos_adicionais:
+                st.info(texto_ui("more_videos_empty"))
+            else:
+                st.markdown(f"### {texto_ui('more_videos_results')}")
+                colunas_videos = st.columns(2, gap="medium")
+                for indice, outro_video in enumerate(st.session_state.videos_adicionais):
+                    with colunas_videos[indice % 2]:
+                        with st.container(border=True):
+                            st.text(encurtar(outro_video.get("title", texto_ui("related_video")), 100))
+                            if outro_video.get("channel"):
+                                st.caption(f"{texto_ui('channel')}: {outro_video['channel']}")
+                            st.iframe(
+                                f"https://www.youtube-nocookie.com/embed/{outro_video['id']}?rel=0&playsinline=1",
+                                height=250,
+                            )
 
         st.markdown(f"### {texto_ui('sites_found')}")
         if fontes:

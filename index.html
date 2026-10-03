@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f4f7fc">
     <meta name="description" content="Pesquise no Knowix e confira respostas, fontes e vídeos relacionados.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://knowix4869-knowix.streamlit.app; form-action 'none'">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./icons/knowix-192.png" type="image/png">
     <title>Knowix</title>
@@ -17,7 +18,7 @@
   </head>
   <body>
     <main>
-      <iframe title="Pesquisa Knowix" src="https://knowix4869-knowix.streamlit.app/?embed=true" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe>
+      <iframe title="Pesquisa Knowix" src="https://knowix4869-knowix.streamlit.app/?embed=true" sandbox="allow-forms allow-scripts allow-same-origin" allow="fullscreen; autoplay; presentation" allowfullscreen></iframe>
     </main>
     <script>
       if ('serviceWorker' in navigator) {
