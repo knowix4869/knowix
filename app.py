@@ -427,7 +427,8 @@ def pesquisar_na_web(pergunta, chave):
         ),
         "topic": "general",
         "search_depth": "basic",
-        "max_results": 8,
+        # Menos resultados reduz a resposta do serviço e mantém fontes suficientes.
+        "max_results": 5,
         "include_answer": "basic",
         "include_raw_content": False,
         "country": "brazil",
@@ -435,7 +436,7 @@ def pesquisar_na_web(pergunta, chave):
         "filter_by_language": False,
         "safe_search": True,
     }
-    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=35)
+    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=(4, 18))
     if resposta.status_code == 401:
         raise ValueError("A chave de busca não foi aceita. Confira TAVILY_API_KEY nas configurações.")
     if resposta.status_code == 429:
@@ -496,7 +497,7 @@ def pesquisar_videos_youtube(assunto, limite=8, rapido=False):
         "extract_flat": "in_playlist" if rapido else False,
         "ignoreerrors": True,
         "noplaylist": True,
-        "socket_timeout": 12,
+        "socket_timeout": 6,
     }
     with yt_dlp.YoutubeDL(opcoes) as youtube:
         resultado = youtube.extract_info(f"ytsearch{limite}:{assunto}", download=False)
@@ -517,9 +518,10 @@ def pesquisar_videos_youtube(assunto, limite=8, rapido=False):
     return sorted(videos, key=lambda item: item.get("view_count") or 0, reverse=True)
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
 def pesquisar_video_youtube(assunto):
-    """Escolhe o vídeo mais visto entre os primeiros resultados relevantes."""
-    videos = pesquisar_videos_youtube(assunto)
+    """Guarda por 30 minutos a prévia pública para acelerar buscas repetidas."""
+    videos = pesquisar_videos_youtube(assunto, limite=5, rapido=True)
     if not videos:
         return None
     return videos[0]
