@@ -1,12 +1,14 @@
 import os
 import re
 import time
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from html import escape
 from urllib.parse import quote_plus, urlparse
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 import yt_dlp
 
 
@@ -17,9 +19,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+componente_pesquisa_por_voz = components.declare_component(
+    "knowix_voice_search",
+    path=Path(__file__).parent / "knowix_voice",
+)
+
 if "tema_visual" not in st.session_state:
     st.session_state.tema_visual = "Claro"
-if "idioma_visual" not in st.session_state:
+# Atualiza a preferência de sessões anteriores para evitar que uma configuração
+# antiga em inglês faça a tela abrir nesse idioma após a correção.
+if st.session_state.get("versao_idioma_visual") != 2:
+    st.session_state.idioma_visual = "Português"
+    st.session_state.versao_idioma_visual = 2
+elif st.session_state.get("idioma_visual") not in {"Português", "English", "Español"}:
     st.session_state.idioma_visual = "Português"
 if "cache_traducoes" not in st.session_state:
     st.session_state.cache_traducoes = {}
@@ -57,6 +69,14 @@ estilo = (
     [data-testid="stSelectbox"] [role="combobox"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:13px; min-height:48px;
     }
+    .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] {
+      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:999px;
+      box-shadow:0 4px 14px rgba(33,58,99,.08); min-height:34px; padding:0 7px;
+    }
+    .st-key-language-control [data-testid="stSelectbox"] input[role="combobox"] {
+      color:__COR_TEXTO__ !important; font-size:11px; -webkit-text-fill-color:__COR_TEXTO__ !important;
+    }
+    div[data-testid="stTextInput"] [data-testid="InputInstructions"] { display:none !important; }
     [data-testid="stSelectbox"] input[role="combobox"] {
       color:__COR_TEXTO__ !important; -webkit-text-fill-color:__COR_TEXTO__ !important; opacity:1 !important;
     }
@@ -86,7 +106,6 @@ estilo = (
       color:#fff; display:flex; font-size:25px; height:52px; justify-content:center; width:52px;
     }
     .brand-name { color:var(--ink); font-size:35px; font-weight:800; letter-spacing:-1.5px; }
-    .hero-copy { color:var(--muted); font-size:15px; margin:7px 0 20px; text-align:center; }
     .search-hint { color:var(--muted); font-size:12px; margin:10px 4px 0; text-align:center; }
     div[data-testid="stForm"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
@@ -117,19 +136,15 @@ estilo = (
       background:#111a2b; border-radius:20px; color:white; overflow:hidden;
       padding:18px;
     }
-    .soft-note {
-      background:__COR_CAMPO__; border:1px solid __COR_BORDA__; border-radius:14px;
-      color:var(--muted); font-size:13px; padding:13px 16px;
-    }
     @media (max-width:700px) {
       .block-container { padding:.65rem .8rem 1rem; }
       .brand-row { gap:10px; }
       .brand-mark { width:44px; height:44px; }
       .brand-name { font-size:28px; }
-      .hero-copy { font-size:14px; margin-bottom:14px; }
       .search-hint { color:var(--muted); font-size:14px; line-height:1.5; }
-      [data-testid="stSelectbox"] [role="combobox"] { min-height:52px; }
+      .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] { min-height:34px; }
       [data-testid="stSelectbox"] [role="combobox"] * { font-size:16px; }
+      .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] * { font-size:11px; }
       div[data-testid="stButton"] button { font-size:16px; min-height:52px; line-height:1.35; }
       div[data-testid="stForm"] { border-radius:16px; padding:10px; }
     }
@@ -151,7 +166,6 @@ st.markdown(estilo, unsafe_allow_html=True)
 
 TRADUCOES_UI = {
     "Português": {
-        "subtitle": "Uma pergunta. Uma resposta clara. Descubra páginas e vídeos sobre o assunto.",
         "section_Pesquisar": "Pesquisar", "section_Nova aba": "Nova aba",
         "section_Histórico": "Histórico", "section_Configurações": "Configurações",
         "section_Sobre o app": "Sobre o app", "section_Sugestões": "Sugestões",
@@ -177,7 +191,9 @@ TRADUCOES_UI = {
         "open_email": "Abrir o Gmail para enviar", "email_note": "Por segurança, o Knowix não envia e-mails sozinho: confira a mensagem no Gmail e toque em Enviar.",
         "searching": "Pesquisando páginas e vídeos ao mesmo tempo...", "cached": "Resultado recente carregado da sua sessão.",
         "empty_search": "Digite um assunto para começar a pesquisa.", "results_for": "RESULTADOS PARA",
-        "quick_answer": "✦ RESPOSTA RÁPIDA", "answer_caption": "Resumo automático da busca. Abra as páginas abaixo para conferir os detalhes.",
+        "quick_answer": "✦ RESPOSTA DE IA", "answer_caption": "Resposta gerada por IA com base em páginas encontradas. Confira as fontes abaixo.",
+        "source_answer": "✦ RESUMO DA FONTE", "source_answer_caption": "Este resumo vem da Wikipédia; configure a busca por IA para gerar uma resposta própria.",
+        "answer_unspecified": "✦ RESPOSTA", "answer_unspecified_caption": "Abra as fontes abaixo para conferir os detalhes.",
         "no_answer": "Não consegui montar uma resposta direta agora. Veja os sites encontrados abaixo.",
         "featured_video": "▶ VÍDEO EM DESTAQUE", "related_video": "Vídeo relacionado", "no_video": "Não encontrei uma prévia de vídeo para este assunto.",
         "video_caption": "A prévia é reproduzida dentro do Knowix. Os controles do YouTube podem oferecer links externos.",
@@ -189,10 +205,8 @@ TRADUCOES_UI = {
         "open_source": "Abrir esta fonte fora do Knowix (opcional)", "source_page": "Fonte da web",
         "translation_wait": "Traduzindo a resposta e as fontes...", "translation_error": "O serviço de tradução não respondeu desta vez; parte do conteúdo pode continuar em português.",
         "channel": "Canal", "views": "Visualizações",
-        "footer_note": "O Knowix pesquisa páginas públicas indexadas na web. Compare as fontes antes de usar informações importantes.",
     },
     "English": {
-        "subtitle": "One question. One clear answer. Discover pages and videos about the topic.",
         "section_Pesquisar": "Search", "section_Nova aba": "New tab", "section_Histórico": "History",
         "section_Configurações": "Settings", "section_Sobre o app": "About the app", "section_Sugestões": "Suggestions",
         "search_placeholder": "🔎  Search any topic, question, or idea...", "search_button": "Search",
@@ -214,8 +228,10 @@ TRADUCOES_UI = {
         "write_suggestion": "Write your suggestion before continuing.", "open_email": "Open Gmail to send",
         "email_note": "For your safety, Knowix does not send emails automatically. Review the message in Gmail and press Send.",
         "searching": "Searching pages and videos at the same time...", "cached": "Recent result loaded from your session.",
-        "empty_search": "Enter a topic to start searching.", "results_for": "RESULTS FOR", "quick_answer": "✦ QUICK ANSWER",
-        "answer_caption": "Automatic search summary. Open the pages below to check the details.",
+        "empty_search": "Enter a topic to start searching.", "results_for": "RESULTS FOR", "quick_answer": "✦ AI ANSWER",
+        "answer_caption": "AI-generated answer based on found pages. Check the sources below.",
+        "source_answer": "✦ SOURCE SUMMARY", "source_answer_caption": "This summary comes from Wikipedia; configure AI search to generate an answer.",
+        "answer_unspecified": "✦ ANSWER", "answer_unspecified_caption": "Open the sources below to check the details.",
         "no_answer": "I couldn't create a direct answer right now. See the websites found below.", "featured_video": "▶ FEATURED VIDEO",
         "related_video": "Related video", "no_video": "I couldn't find a video preview for this topic.",
         "video_caption": "The preview plays inside Knowix. YouTube controls may offer external links.",
@@ -226,10 +242,8 @@ TRADUCOES_UI = {
         "open_source": "Open this source outside Knowix (optional)", "source_page": "Web source",
         "translation_wait": "Translating the answer and sources...", "translation_error": "The translation service did not respond this time; some content may remain in Portuguese.",
         "channel": "Channel", "views": "Views",
-        "footer_note": "Knowix searches public pages indexed on the web. Compare sources before using important information.",
     },
     "Español": {
-        "subtitle": "Una pregunta. Una respuesta clara. Descubre páginas y videos sobre el tema.",
         "section_Pesquisar": "Buscar", "section_Nova aba": "Nueva pestaña", "section_Histórico": "Historial",
         "section_Configurações": "Configuración", "section_Sobre o app": "Acerca de la app", "section_Sugestões": "Sugerencias",
         "search_placeholder": "🔎  Busca cualquier tema, duda o pregunta...", "search_button": "Buscar",
@@ -251,8 +265,10 @@ TRADUCOES_UI = {
         "write_suggestion": "Escribe tu sugerencia antes de continuar.", "open_email": "Abrir Gmail para enviar",
         "email_note": "Por seguridad, Knowix no envía correos automáticamente. Revisa el mensaje en Gmail y pulsa Enviar.",
         "searching": "Buscando páginas y videos al mismo tiempo...", "cached": "Resultado reciente cargado desde tu sesión.",
-        "empty_search": "Escribe un tema para comenzar la búsqueda.", "results_for": "RESULTADOS PARA", "quick_answer": "✦ RESPUESTA RÁPIDA",
-        "answer_caption": "Resumen automático de la búsqueda. Abre las páginas de abajo para revisar los detalles.",
+        "empty_search": "Escribe un tema para comenzar la búsqueda.", "results_for": "RESULTADOS PARA", "quick_answer": "✦ RESPUESTA DE IA",
+        "answer_caption": "Respuesta generada por IA a partir de páginas encontradas. Consulta las fuentes abajo.",
+        "source_answer": "✦ RESUMEN DE LA FUENTE", "source_answer_caption": "Este resumen proviene de Wikipedia; configura la búsqueda por IA para generar una respuesta.",
+        "answer_unspecified": "✦ RESPUESTA", "answer_unspecified_caption": "Abre las fuentes de abajo para revisar los detalles.",
         "no_answer": "No pude preparar una respuesta directa ahora. Consulta los sitios encontrados abajo.", "featured_video": "▶ VIDEO DESTACADO",
         "related_video": "Video relacionado", "no_video": "No encontré una vista previa de video para este tema.",
         "video_caption": "La vista previa se reproduce dentro de Knowix. Los controles de YouTube pueden ofrecer enlaces externos.",
@@ -263,7 +279,6 @@ TRADUCOES_UI = {
         "open_source": "Abrir esta fuente fuera de Knowix (opcional)", "source_page": "Fuente web",
         "translation_wait": "Traduciendo la respuesta y las fuentes...", "translation_error": "El servicio de traducción no respondió esta vez; parte del contenido puede seguir en portugués.",
         "channel": "Canal", "views": "Visualizaciones",
-        "footer_note": "Knowix busca páginas públicas indexadas en la web. Compara las fuentes antes de usar información importante.",
     },
 }
 
@@ -317,7 +332,7 @@ def traduzir_textos(textos):
             "https://translate.googleapis.com/translate_a/single",
             params={"client": "gtx", "sl": "auto", "tl": destino, "dt": "t", "q": texto},
             headers={"User-Agent": "Knowix/2.0"},
-            timeout=12,
+            timeout=5,
         )
         resposta.raise_for_status()
         partes = resposta.json()[0]
@@ -387,12 +402,14 @@ if "fonte_aberta" not in st.session_state:
 if "busca_pendente" not in st.session_state:
     st.session_state.busca_pendente = None
 
-col_espaco_idioma, col_idioma = st.columns([7, 2])
-with col_idioma:
+with st.container(key="language-control", horizontal=True, horizontal_alignment="right", gap=0):
     st.selectbox(
         "🌐 Idioma" if st.session_state.idioma_visual != "English" else "🌐 Language",
         ["Português", "English", "Español"],
         key="idioma_visual",
+        format_func=lambda idioma: f"🌐 {idioma}",
+        label_visibility="collapsed",
+        width=124,
     )
 
 st.markdown(
@@ -400,7 +417,6 @@ st.markdown(
     <div class="brand-row">
       <div class="brand-mark">⌕</div><div class="brand-name">Knowix</div>
     </div>
-      <p class="hero-copy">{escape(texto_ui("subtitle"))}</p>
     """,
     unsafe_allow_html=True,
 )
@@ -436,7 +452,7 @@ def pesquisar_na_web(pergunta, chave):
         "filter_by_language": False,
         "safe_search": True,
     }
-    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=(4, 18))
+    resposta = requests.post(url, headers=cabecalhos, json=dados, timeout=(3, 9))
     if resposta.status_code == 401:
         raise ValueError("A chave de busca não foi aceita. Confira TAVILY_API_KEY nas configurações.")
     if resposta.status_code == 429:
@@ -464,7 +480,7 @@ def pesquisar_wikipedia(assunto):
         url,
         params=parametros,
         headers={"User-Agent": "Knowix/2.0 (aplicativo de pesquisa)"},
-        timeout=20,
+        timeout=(3, 9),
     )
     resposta.raise_for_status()
     return resposta.json().get("query", {}).get("pages", [])
@@ -497,7 +513,10 @@ def pesquisar_videos_youtube(assunto, limite=8, rapido=False):
         "extract_flat": "in_playlist" if rapido else False,
         "ignoreerrors": True,
         "noplaylist": True,
-        "socket_timeout": 6,
+        "socket_timeout": 4,
+        "retries": 0,
+        "extractor_retries": 0,
+        "fragment_retries": 0,
     }
     with yt_dlp.YoutubeDL(opcoes) as youtube:
         resultado = youtube.extract_info(f"ytsearch{limite}:{assunto}", download=False)
@@ -565,6 +584,7 @@ def buscar_resultados(assunto, chave_tavily):
         cache.pop(chave_cache, None)
 
     resposta_direta = ""
+    resposta_gerada_por_ia = False
     fontes = []
     video = None
     avisos = []
@@ -579,6 +599,7 @@ def buscar_resultados(assunto, chave_tavily):
             dados_web = busca_web.result()
             if chave_tavily:
                 resposta_direta = (dados_web.get("answer") or "").strip()
+                resposta_gerada_por_ia = bool(resposta_direta)
                 for item in dados_web.get("results", []):
                     url_fonte = item.get("url", "")
                     if urlparse(url_fonte).scheme in {"http", "https"}:
@@ -626,6 +647,7 @@ def buscar_resultados(assunto, chave_tavily):
     dados = {
         "assunto": assunto,
         "resposta": resposta_direta,
+        "resposta_gerada_por_ia": resposta_gerada_por_ia,
         "fontes": fontes,
         "video": video,
         "avisos": avisos,
@@ -664,6 +686,51 @@ pergunta = ""
 buscar_nova = False
 pergunta_nova = ""
 if secao_app == "Pesquisar":
+    codigo_idioma_voz = {
+        "Português": "pt-BR",
+        "English": "en-US",
+        "Español": "es-ES",
+    }[st.session_state.idioma_visual]
+    textos_voz = {
+        "Português": {
+            "button": "Pesquisar por voz", "listening": "Ouvindo…", "stop": "Parar de ouvir",
+            "recognized": "Fala reconhecida. Confira o texto e toque em Pesquisar.",
+            "unsupported": "Este navegador não oferece pesquisa por voz.",
+            "permission": "Permita o microfone para usar a pesquisa por voz.",
+            "error": "Não consegui reconhecer sua fala. Tente novamente.",
+            "privacy": "O áudio pode ser enviado ao serviço de reconhecimento do navegador ou dispositivo. O Knowix recebe o texto e só pesquisa após sua confirmação.",
+        },
+        "English": {
+            "button": "Search by voice", "listening": "Listening…", "stop": "Stop listening",
+            "recognized": "Speech recognized. Review the text and select Search.",
+            "unsupported": "Voice search is unavailable in this browser.",
+            "permission": "Allow microphone access to use voice search.",
+            "error": "I couldn't recognize your speech. Please try again.",
+            "privacy": "Audio may be sent to your browser's or device's recognition service. Knowix receives the text and searches only after you confirm.",
+        },
+        "Español": {
+            "button": "Buscar por voz", "listening": "Escuchando…", "stop": "Dejar de escuchar",
+            "recognized": "Voz reconocida. Revisa el texto y pulsa Buscar.",
+            "unsupported": "Este navegador no ofrece búsqueda por voz.",
+            "permission": "Permite el micrófono para usar la búsqueda por voz.",
+            "error": "No pude reconocer tu voz. Inténtalo de nuevo.",
+            "privacy": "El audio puede enviarse al servicio de reconocimiento del navegador o dispositivo. Knowix recibe el texto y busca solo cuando confirmes.",
+        },
+    }[st.session_state.idioma_visual]
+    resultado_voz = componente_pesquisa_por_voz(
+        language=codigo_idioma_voz,
+        labels=textos_voz,
+        default=None,
+        key="pesquisa_por_voz",
+        height=104,
+    )
+    if isinstance(resultado_voz, dict):
+        texto_reconhecido = str(resultado_voz.get("transcript", "")).strip()
+        id_reconhecimento = resultado_voz.get("id")
+        if texto_reconhecido and id_reconhecimento != st.session_state.get("voz_processada_id"):
+            st.session_state.pergunta_principal = texto_reconhecido[:500]
+            st.session_state.voz_processada_id = id_reconhecimento
+
     with st.form("formulario_pesquisa", clear_on_submit=False):
         col_busca, col_botao = st.columns([8, 1.35], vertical_alignment="bottom")
         with col_busca:
@@ -829,10 +896,23 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
         col_resposta, col_video = st.columns([1.1, 0.9], gap="large")
         with col_resposta:
             with st.container(border=True):
-                st.markdown(f'<div class="answer-label">{texto_ui("quick_answer")}</div>', unsafe_allow_html=True)
+                origem_resposta = resultado_atual.get("resposta_gerada_por_ia")
+                chave_resposta = (
+                    "quick_answer" if origem_resposta is True else
+                    "source_answer" if origem_resposta is False else
+                    "answer_unspecified"
+                )
+                chave_legenda = (
+                    "answer_caption" if origem_resposta is True else
+                    "source_answer_caption" if origem_resposta is False else
+                    "answer_unspecified_caption"
+                )
+                rotulo_resposta = texto_ui(chave_resposta)
+                legenda_resposta = texto_ui(chave_legenda)
+                st.markdown(f'<div class="answer-label">{rotulo_resposta}</div>', unsafe_allow_html=True)
                 if resultado_atual["resposta"]:
                     st.markdown(resumir_resposta(resultado_atual["resposta"]))
-                    st.caption(texto_ui("answer_caption"))
+                    st.caption(legenda_resposta)
                 else:
                     st.write(texto_ui("no_answer"))
 
@@ -941,7 +1021,3 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                     use_container_width=True,
                 )
 
-st.markdown(
-    f'<div class="soft-note">{escape(texto_ui("footer_note"))}</div>',
-    unsafe_allow_html=True,
-)
