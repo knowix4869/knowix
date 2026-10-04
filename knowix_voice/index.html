@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * { box-sizing: border-box; }
+      body { color: #14213d; font: 12px Arial, sans-serif; margin: 0; padding: 2px 0 0; }
+      .voice-control { text-align: right; width: 100%; }
+      button {
+        align-items: center; background: #fff; border: 1px solid #dce4f0;
+        border-radius: 13px; color: #14213d; cursor: pointer; display: inline-flex;
+        font: 600 14px Arial, sans-serif; gap: 8px; justify-content: center;
+        min-height: 42px; padding: 0 15px;
+      }
+      button:hover { border-color: #246bfe; color: #246bfe; }
+      button:focus-visible { outline: 3px solid #246bfe55; }
+      button.is-listening { background: #fff1f1; border-color: #e75c65; color: #b42332; }
+      .status { color: #69758c; line-height: 1.35; margin: 4px 0 0; text-align: left; }
+      @media (prefers-color-scheme: dark) {
+        body { color: #eef3ff; }
+        button { background: #172235; border-color: #33425a; color: #eef3ff; }
+        .status { color: #adbad0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="voice-control">
+      <button id="voice-button" type="button">
+        <span aria-hidden="true">🎙️</span><span id="button-label">Pesquisar por voz</span>
+      </button>
+      <p class="status" id="voice-status" role="status" aria-live="polite"></p>
+    </div>
+    <script>
+      const button = document.getElementById("voice-button");
+      const buttonLabel = document.getElementById("button-label");
+      const status = document.getElementById("voice-status");
+      const streamlit = {
+        ready() { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*"); },
+        height() {
+          const root = document.querySelector(".voice-control");
+          const height = root ? Math.ceil(root.getBoundingClientRect().height + 4) : 56;
+          window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height }, "*");
+        },
+        value(value) { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value, dataType: "json" }, "*"); }
+      };
+      let labels = {};
+      let language = "pt-BR";
+      let recognition = null;
+      let androidBridge = null;
+      let androidListenerAttached = false;
+      let listening = false;
+
+      function updateListening(value) {
+        listening = value;
+        button.classList.toggle("is-listening", value);
+        buttonLabel.textContent = value ? (labels.stop || labels.listening) : labels.button;
+        streamlit.height();
+      }
+
+      function showError(key) {
+        status.textContent = labels[key] || labels.error;
+        updateListening(false);
+      }
+
+      function onAndroidMessage(event) {
+        let response;
+        try { response = JSON.parse(event.data); } catch (_) { return; }
+        if (response.type === "listening") {
+          status.textContent = labels.listening;
+          updateListening(true);
+        } else if (response.type === "result" && response.transcript) {
+          status.textContent = labels.recognized;
+          updateListening(false);
+          streamlit.height();
+          streamlit.value({ transcript: response.transcript, id: response.id });
+        } else if (response.type === "error") {
+          showError(response.error === "permission" ? "permission" : "error");
+        } else if (response.type === "stopped") {
+          status.textContent = "";
+          updateListening(false);
+        }
+      }
+
+      function startBrowserRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { showError("unsupported"); return; }
+        recognition = new SpeechRecognition();
+        recognition.lang = language;
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = () => { status.textContent = labels.listening; updateListening(true); };
+        recognition.onresult = (event) => {
+          const transcript = (event.results?.[0]?.[0]?.transcript || "").trim();
+          if (!transcript) return;
+          status.textContent = labels.recognized;
+          streamlit.height();
+          streamlit.value({ transcript, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` });
+        };
+        recognition.onerror = (event) => {
+          showError(event.error === "not-allowed" || event.error === "service-not-allowed" ? "permission" : "error");
+        };
+        recognition.onend = () => updateListening(false);
+        try { recognition.start(); } catch (_) { showError("error"); }
+      }
+
+      button.addEventListener("click", () => {
+        status.textContent = "";
+        if (listening) {
+          if (androidBridge) androidBridge.postMessage(JSON.stringify({ type: "cancel" }));
+          else if (recognition) recognition.stop();
+          updateListening(false);
+          return;
+        }
+        if (androidBridge) {
+          updateListening(true);
+          androidBridge.postMessage(JSON.stringify({ type: "start", language }));
+        } else { startBrowserRecognition(); }
+      });
+
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "streamlit:render") return;
+        const args = event.data.args || {};
+        labels = args.labels || {};
+        language = args.language || "pt-BR";
+        buttonLabel.textContent = labels.button || "Search by voice";
+        status.textContent = labels.privacy || "";
+        androidBridge = window.KnowixAndroidVoice || null;
+        if (androidBridge && !androidListenerAttached) {
+          androidBridge.addEventListener("message", onAndroidMessage);
+          androidListenerAttached = true;
+        }
+        streamlit.height();
+      });
+
+      streamlit.height();
+      streamlit.ready();
+    </script>
+  </body>
+</html>
