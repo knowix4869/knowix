@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>html, body { height: 1px; margin: 0; overflow: hidden; padding: 0; }</style>
+  </head>
+  <body>
+    <script>
+      const streamlit = {
+        ready() {
+          window.parent.postMessage({
+            isStreamlitMessage: true,
+            type: "streamlit:componentReady",
+            apiVersion: 1
+          }, "*");
+        },
+        height() {
+          window.parent.postMessage({
+            isStreamlitMessage: true,
+            type: "streamlit:setFrameHeight",
+            height: 1
+          }, "*");
+        },
+        value(value) {
+          window.parent.postMessage({
+            isStreamlitMessage: true,
+            type: "streamlit:setComponentValue",
+            value,
+            dataType: "json"
+          }, "*");
+        }
+      };
+
+      function capturarRecuperacao() {
+        try {
+          const url = new URL(window.parent.location.href);
+          const fragmento = new URLSearchParams(url.hash.replace(/^#/, ""));
+          const tipo = fragmento.get("type");
+          const token = fragmento.get("access_token");
+          if (tipo !== "recovery" || !token || token.length > 4096) return;
+          streamlit.value({kind: "password_recovery", id: crypto.randomUUID(), access_token: token});
+          url.hash = "";
+          window.parent.history.replaceState(null, "", url.pathname + url.search);
+        } catch (_) {
+          // O hash contém credenciais temporárias; não o registra nem o persiste.
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+        capturarRecuperacao();
+        streamlit.height();
+      });
+      streamlit.ready();
+      setTimeout(capturarRecuperacao, 100);
+    </script>
+  </body>
+</html>
