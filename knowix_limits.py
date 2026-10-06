@@ -24,17 +24,18 @@ class LimitadorPesquisas:
         self.limites = {
             "rapida": _limite_configurado("KNOWIX_SEARCHES_PER_HOUR", 30),
             "profunda": _limite_configurado("KNOWIX_DEEP_SEARCHES_PER_HOUR", 3),
+            "imagem": _limite_configurado("KNOWIX_IMAGE_ANALYSES_PER_HOUR", 5),
         }
         self._eventos: OrderedDict[str, dict[str, deque[float]]] = OrderedDict()
         self._lock = threading.Lock()
 
     def reservar(self, cliente_id: str, modo: str, agora: float | None = None) -> bool:
-        categoria = "profunda" if modo == "profunda" else "rapida"
+        categoria = modo if modo in self.limites else "rapida"
         instante = time.monotonic() if agora is None else agora
         with self._lock:
             eventos_cliente = self._eventos.get(cliente_id)
             if eventos_cliente is None:
-                eventos_cliente = {"rapida": deque(), "profunda": deque()}
+                eventos_cliente = {categoria_nome: deque() for categoria_nome in self.limites}
                 self._eventos[cliente_id] = eventos_cliente
             else:
                 self._eventos.move_to_end(cliente_id)

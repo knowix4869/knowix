@@ -28,6 +28,7 @@ from knowix_search import (
     classificar_fonte, detectar_comparacao, filtrar_fontes,
     filtros_disponiveis, normalizar_url_http,
 )
+from knowix_vision import ErroVisaoKnowix, analisar_imagem, obter_chave_gemini, obter_modelo_gemini
 
 
 st.set_page_config(
@@ -269,6 +270,13 @@ TRADUCOES_UI = {
         "listen_answer": "🔊 Ouvir resposta", "stop_speech": "Parar leitura", "speech_unsupported": "A leitura em voz alta não está disponível neste navegador.",
         "rate_limit_quick": "Você atingiu o limite temporário de pesquisas. Aguarde uma hora e tente novamente.",
         "rate_limit_deep": "Você atingiu o limite temporário de pesquisas profundas. Aguarde uma hora e tente novamente.",
+        "image_title": "Pesquisar com uma imagem", "image_caption": "Envie uma foto para perguntar sobre o que aparece nela.",
+        "image_upload": "Escolha uma imagem (JPG, PNG ou WebP; até 8 MB)", "image_question": "O que você quer saber sobre a imagem?",
+        "image_question_hint": "Ex.: Que objeto é este? Como posso pesquisar por um modelo parecido?",
+        "image_privacy": "A imagem selecionada passa temporariamente pelo servidor Knowix. Ao tocar em Analisar, ela será enviada ao Google Gemini. Não é salva; evite imagens pessoais ou sensíveis.",
+        "image_analyze": "Analisar imagem", "image_missing_key": "A análise precisa de GEMINI_API_KEY nos Secrets do Streamlit ou no ambiente seguro do servidor. Crie uma chave no Google AI Studio e configure-a no servidor; nunca a coloque no código ou no app do usuário.",
+        "image_analysis": "Análise visual — resposta de IA", "image_web_search": "Pesquisar na web sobre isso",
+        "image_error": "Não foi possível analisar a imagem.", "image_rate_limit": "Você atingiu o limite temporário de análises de imagem. Tente novamente em uma hora.",
     },
     "English": {
         "section_Pesquisar": "Search", "section_Nova aba": "New tab", "section_Histórico": "History", "section_Favoritos": "Favorites", "section_Pastas": "Folders", "section_Projetos": "Projects",
@@ -344,6 +352,13 @@ TRADUCOES_UI = {
         "listen_answer": "🔊 Listen to answer", "stop_speech": "Stop reading", "speech_unsupported": "Read-aloud is unavailable in this browser.",
         "rate_limit_quick": "You reached the temporary search limit. Wait an hour and try again.",
         "rate_limit_deep": "You reached the temporary deep research limit. Wait an hour and try again.",
+        "image_title": "Search with an image", "image_caption": "Upload a photo to ask about what appears in it.",
+        "image_upload": "Choose an image (JPG, PNG, or WebP; up to 8 MB)", "image_question": "What would you like to know about the image?",
+        "image_question_hint": "For example: What is this object? How can I find a similar model?",
+        "image_privacy": "The selected image passes temporarily through the Knowix server. When you select Analyze, it is sent to Google Gemini. It is not saved; avoid personal or sensitive images.",
+        "image_analyze": "Analyze image", "image_missing_key": "Image analysis requires GEMINI_API_KEY in Streamlit Secrets or the server's secure environment. Create a key in Google AI Studio and configure it on the server; never put it in code or the user's app.",
+        "image_analysis": "Visual analysis — AI response", "image_web_search": "Search the web about this",
+        "image_error": "The image could not be analyzed.", "image_rate_limit": "You reached the temporary image analysis limit. Try again in an hour.",
     },
     "Español": {
         "section_Pesquisar": "Buscar", "section_Nova aba": "Nueva pestaña", "section_Histórico": "Historial", "section_Favoritos": "Favoritos", "section_Pastas": "Carpetas", "section_Projetos": "Proyectos",
@@ -419,6 +434,13 @@ TRADUCOES_UI = {
         "listen_answer": "🔊 Escuchar respuesta", "stop_speech": "Detener lectura", "speech_unsupported": "La lectura en voz alta no está disponible en este navegador.",
         "rate_limit_quick": "Alcanzaste el límite temporal de búsquedas. Espera una hora e inténtalo de nuevo.",
         "rate_limit_deep": "Alcanzaste el límite temporal de investigaciones profundas. Espera una hora e inténtalo de nuevo.",
+        "image_title": "Buscar con una imagen", "image_caption": "Sube una foto para preguntar sobre lo que aparece en ella.",
+        "image_upload": "Elige una imagen (JPG, PNG o WebP; hasta 8 MB)", "image_question": "¿Qué quieres saber sobre la imagen?",
+        "image_question_hint": "Ej.: ¿Qué objeto es este? ¿Cómo busco un modelo parecido?",
+        "image_privacy": "La imagen seleccionada pasa temporalmente por el servidor de Knowix. Al pulsar Analizar, se envía a Google Gemini. No se guarda; evita imágenes personales o sensibles.",
+        "image_analyze": "Analizar imagen", "image_missing_key": "El análisis requiere GEMINI_API_KEY en los Secrets de Streamlit o en el entorno seguro del servidor. Crea una clave en Google AI Studio y configúrala en el servidor; nunca la pongas en el código ni en la app del usuario.",
+        "image_analysis": "Análisis visual — respuesta de IA", "image_web_search": "Buscar en la web sobre esto",
+        "image_error": "No se pudo analizar la imagen.", "image_rate_limit": "Alcanzaste el límite temporal de análisis de imágenes. Vuelve a intentarlo en una hora.",
     },
 }
 
@@ -1579,6 +1601,68 @@ if secao_app in ("Pesquisar", "Nova aba"):
         st.caption(texto_ui("deep_needs_key"))
 
 if secao_app == "Pesquisar":
+    try:
+        chave_visao = obter_chave_gemini(st.secrets)
+        modelo_visao = obter_modelo_gemini(st.secrets)
+    except Exception:
+        chave_visao = obter_chave_gemini()
+        modelo_visao = obter_modelo_gemini()
+    with st.expander(f"🖼️ {texto_ui('image_title')}"):
+        st.caption(texto_ui("image_caption"))
+        st.caption(texto_ui("image_missing_key") if not chave_visao else texto_ui("image_privacy"))
+        imagem_enviada = st.file_uploader(
+            texto_ui("image_upload"),
+            type=["jpg", "jpeg", "png", "webp"],
+            max_upload_size=8,
+            disabled=not bool(chave_visao),
+            key="knowix_image_upload",
+        )
+        pergunta_imagem = st.text_input(
+            texto_ui("image_question"),
+            placeholder=texto_ui("image_question_hint"),
+            max_chars=1000,
+            key="knowix_image_question",
+        )
+        analisar = st.button(
+            texto_ui("image_analyze"),
+            disabled=not bool(chave_visao and imagem_enviada),
+            key="knowix_analyze_image",
+            use_container_width=True,
+        )
+        if analisar:
+            if not reservar_cota_pesquisa("imagem"):
+                st.warning(texto_ui("image_rate_limit"))
+            else:
+                try:
+                    with st.spinner(texto_ui("image_analyze") + "…"):
+                        st.session_state.analise_imagem = analisar_imagem(
+                            imagem_enviada.getvalue(), pergunta_imagem, chave_visao,
+                            model=modelo_visao, mime_informado=imagem_enviada.type,
+                        )
+                        st.session_state.analise_imagem_consulta = pergunta_imagem.strip()
+                except ErroVisaoKnowix as erro:
+                    st.session_state.analise_imagem = ""
+                    st.error(str(erro))
+                except Exception:
+                    st.session_state.analise_imagem = ""
+                    st.error(texto_ui("image_error"))
+        analise_atual = st.session_state.get("analise_imagem", "")
+        if analise_atual:
+            st.markdown(f"#### {texto_ui('image_analysis')}")
+            st.markdown(analise_atual)
+            consulta_visual = st.text_input(
+                texto_ui("search_placeholder"),
+                value=st.session_state.get("analise_imagem_consulta") or analise_atual[:180],
+                max_chars=500,
+                key="knowix_image_web_query",
+            )
+            if st.button(texto_ui("image_web_search"), key="knowix_image_web_search") and consulta_visual.strip():
+                st.session_state.busca_pendente = {
+                    "consulta": consulta_visual.strip(),
+                    "exibicao": consulta_visual.strip(),
+                }
+                st.session_state.resultado_atual = None
+                st.rerun()
     codigo_idioma_voz = {
         "Português": "pt-BR",
         "English": "en-US",
