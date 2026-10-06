@@ -28,7 +28,7 @@ from knowix_search import (
     classificar_fonte, detectar_comparacao, filtrar_fontes,
     filtros_disponiveis, normalizar_url_http,
 )
-from knowix_vision import ErroVisaoKnowix, analisar_imagem, obter_chave_gemini, obter_modelo_gemini
+from knowix_vision import ErroVisaoKnowix, analisar_imagem
 
 
 st.set_page_config(
@@ -273,8 +273,8 @@ TRADUCOES_UI = {
         "image_title": "Pesquisar com uma imagem", "image_caption": "Envie uma foto para perguntar sobre o que aparece nela.",
         "image_upload": "Escolha uma imagem (JPG, PNG ou WebP; até 8 MB)", "image_question": "O que você quer saber sobre a imagem?",
         "image_question_hint": "Ex.: Que objeto é este? Como posso pesquisar por um modelo parecido?",
-        "image_privacy": "A imagem selecionada passa temporariamente pelo servidor Knowix. Ao tocar em Analisar, ela será enviada ao Google Gemini. Não é salva; evite imagens pessoais ou sensíveis.",
-        "image_analyze": "Analisar imagem", "image_missing_key": "A análise precisa de GEMINI_API_KEY nos Secrets do Streamlit ou no ambiente seguro do servidor. Crie uma chave no Google AI Studio e configure-a no servidor; nunca a coloque no código ou no app do usuário.",
+        "image_privacy": "A análise está pausada. Nenhuma foto será enviada a serviços externos até a confirmação adequada de acesso exclusivo para maiores de 18 anos.",
+        "image_analyze": "Análise temporariamente indisponível", "image_missing_key": "A análise de imagem continua desativada até que o acesso exclusivo para maiores de 18 anos seja confirmado adequadamente e as condições do provedor sejam atendidas.",
         "image_analysis": "Análise visual — resposta de IA", "image_web_search": "Pesquisar na web sobre isso",
         "image_error": "Não foi possível analisar a imagem.", "image_rate_limit": "Você atingiu o limite temporário de análises de imagem. Tente novamente em uma hora.",
     },
@@ -355,8 +355,8 @@ TRADUCOES_UI = {
         "image_title": "Search with an image", "image_caption": "Upload a photo to ask about what appears in it.",
         "image_upload": "Choose an image (JPG, PNG, or WebP; up to 8 MB)", "image_question": "What would you like to know about the image?",
         "image_question_hint": "For example: What is this object? How can I find a similar model?",
-        "image_privacy": "The selected image passes temporarily through the Knowix server. When you select Analyze, it is sent to Google Gemini. It is not saved; avoid personal or sensitive images.",
-        "image_analyze": "Analyze image", "image_missing_key": "Image analysis requires GEMINI_API_KEY in Streamlit Secrets or the server's secure environment. Create a key in Google AI Studio and configure it on the server; never put it in code or the user's app.",
+        "image_privacy": "Image analysis is paused. No photo will be sent to external services until adults-only access is adequately assured.",
+        "image_analyze": "Temporarily unavailable", "image_missing_key": "Image analysis remains disabled until adults-only access is adequately assured and provider requirements are met.",
         "image_analysis": "Visual analysis — AI response", "image_web_search": "Search the web about this",
         "image_error": "The image could not be analyzed.", "image_rate_limit": "You reached the temporary image analysis limit. Try again in an hour.",
     },
@@ -437,8 +437,8 @@ TRADUCOES_UI = {
         "image_title": "Buscar con una imagen", "image_caption": "Sube una foto para preguntar sobre lo que aparece en ella.",
         "image_upload": "Elige una imagen (JPG, PNG o WebP; hasta 8 MB)", "image_question": "¿Qué quieres saber sobre la imagen?",
         "image_question_hint": "Ej.: ¿Qué objeto es este? ¿Cómo busco un modelo parecido?",
-        "image_privacy": "La imagen seleccionada pasa temporalmente por el servidor de Knowix. Al pulsar Analizar, se envía a Google Gemini. No se guarda; evita imágenes personales o sensibles.",
-        "image_analyze": "Analizar imagen", "image_missing_key": "El análisis requiere GEMINI_API_KEY en los Secrets de Streamlit o en el entorno seguro del servidor. Crea una clave en Google AI Studio y configúrala en el servidor; nunca la pongas en el código ni en la app del usuario.",
+        "image_privacy": "El análisis está pausado. No se enviará ninguna foto a servicios externos hasta asegurar adecuadamente el acceso exclusivo para mayores de 18 años.",
+        "image_analyze": "Temporalmente no disponible", "image_missing_key": "El análisis de imágenes seguirá desactivado hasta asegurar adecuadamente el acceso exclusivo para mayores de 18 años y cumplir las condiciones del proveedor.",
         "image_analysis": "Análisis visual — respuesta de IA", "image_web_search": "Buscar en la web sobre esto",
         "image_error": "No se pudo analizar la imagen.", "image_rate_limit": "Alcanzaste el límite temporal de análisis de imágenes. Vuelve a intentarlo en una hora.",
     },
@@ -448,6 +448,57 @@ TRADUCOES_UI = {
 def texto_ui(chave):
     idioma = st.session_state.idioma_visual
     return TRADUCOES_UI[idioma].get(chave, TRADUCOES_UI["Português"].get(chave, chave))
+
+
+# Knowix is now an adults-only service. This is a self-declaration, not
+# independent age verification; no date of birth or identity document is stored.
+IDIOMAS_PORTAO_ADULTO = {
+    "Português": {
+        "title": "Acesso exclusivo para maiores de 18 anos",
+        "text": "O Knowix está sendo preparado para uso exclusivo por adultos. Ao continuar, você declara ter 18 anos ou mais.",
+        "check": "Confirmo que tenho 18 anos ou mais.",
+        "enter": "Continuar para o Knowix",
+        "minor": "Se você tem menos de 18 anos, não continue e feche esta página.",
+        "verification": "Esta é uma autodeclaração, não uma verificação independente de idade. O Knowix não pede nem armazena sua data de nascimento.",
+        "error": "Confirme que tem 18 anos ou mais para continuar.",
+    },
+    "English": {
+        "title": "Access is restricted to adults aged 18 or older",
+        "text": "Knowix is being prepared for adults only. By continuing, you declare that you are at least 18 years old.",
+        "check": "I confirm that I am 18 or older.",
+        "enter": "Continue to Knowix",
+        "minor": "If you are under 18, do not continue. Close this page.",
+        "verification": "This is a self-declaration, not independent age verification. Knowix does not ask for or store your date of birth.",
+        "error": "Confirm that you are at least 18 to continue.",
+    },
+    "Español": {
+        "title": "Acceso exclusivo para mayores de 18 años",
+        "text": "Knowix se está preparando para uso exclusivo de adultos. Al continuar, declaras que tienes 18 años o más.",
+        "check": "Confirmo que tengo 18 años o más.",
+        "enter": "Continuar a Knowix",
+        "minor": "Si tienes menos de 18 años, no continúes y cierra esta página.",
+        "verification": "Esta es una autodeclaración, no una verificación independiente de edad. Knowix no solicita ni almacena tu fecha de nacimiento.",
+        "error": "Confirma que tienes 18 años o más para continuar.",
+    },
+}
+
+st.session_state.setdefault("knowix_adult_confirmed", False)
+if not st.session_state.knowix_adult_confirmed:
+    idioma_portao = st.session_state.get("idioma_visual", "Português")
+    textos_portao = IDIOMAS_PORTAO_ADULTO.get(idioma_portao, IDIOMAS_PORTAO_ADULTO["Português"])
+    st.title(textos_portao["title"])
+    st.write(textos_portao["text"])
+    with st.form("knowix_adult_age_gate"):
+        confirmou_idade = st.checkbox(textos_portao["check"])
+        enviou_confirmacao = st.form_submit_button(textos_portao["enter"], use_container_width=True)
+    if enviou_confirmacao:
+        if confirmou_idade:
+            st.session_state.knowix_adult_confirmed = True
+            st.rerun()
+        st.error(textos_portao["error"])
+    st.caption(textos_portao["minor"])
+    st.caption(textos_portao["verification"])
+    st.stop()
 
 
 def sincronizar_secao_selecionada():
@@ -1601,20 +1652,16 @@ if secao_app in ("Pesquisar", "Nova aba"):
         st.caption(texto_ui("deep_needs_key"))
 
 if secao_app == "Pesquisar":
-    try:
-        chave_visao = obter_chave_gemini(st.secrets)
-        modelo_visao = obter_modelo_gemini(st.secrets)
-    except Exception:
-        chave_visao = obter_chave_gemini()
-        modelo_visao = obter_modelo_gemini()
+    # Fail closed: no image provider is enabled before adult-only access is assured.
+    chave_visao = ""
     with st.expander(f"🖼️ {texto_ui('image_title')}"):
         st.caption(texto_ui("image_caption"))
-        st.caption(texto_ui("image_missing_key") if not chave_visao else texto_ui("image_privacy"))
+        st.caption(texto_ui("image_missing_key"))
         imagem_enviada = st.file_uploader(
             texto_ui("image_upload"),
             type=["jpg", "jpeg", "png", "webp"],
             max_upload_size=8,
-            disabled=not bool(chave_visao),
+            disabled=True,
             key="knowix_image_upload",
         )
         pergunta_imagem = st.text_input(
@@ -1625,7 +1672,7 @@ if secao_app == "Pesquisar":
         )
         analisar = st.button(
             texto_ui("image_analyze"),
-            disabled=not bool(chave_visao and imagem_enviada),
+            disabled=True,
             key="knowix_analyze_image",
             use_container_width=True,
         )
