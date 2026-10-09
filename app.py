@@ -2443,7 +2443,7 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                             if not dominio_resposta or dominio_resposta.casefold() in dominios_resposta:
                                 continue
                             dominios_resposta.add(dominio_resposta.casefold())
-                            fontes_resposta.append((dominio_resposta, url_resposta, fonte_resposta.get("title", dominio_resposta)))
+                            fontes_resposta.append((dominio_resposta, url_resposta, str(fonte_resposta.get("title") or dominio_resposta)))
                             if len(fontes_resposta) == 3:
                                 break
                         if fontes_resposta:
