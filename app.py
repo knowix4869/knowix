@@ -103,6 +103,19 @@ estilo = (
     .st-key-language-control [data-testid="stSelectbox"] input[role="combobox"] {
       color:__COR_TEXTO__ !important; font-size:11px; -webkit-text-fill-color:__COR_TEXTO__ !important;
     }
+    .st-key-language-control [data-testid="stPopover"] button {
+      align-items:center; background:linear-gradient(135deg,#176eae,#485fea 65%,#7557df) !important;
+      border:1px solid #ffffff30 !important; border-radius:14px !important; box-shadow:0 6px 16px rgba(60,100,220,.24);
+      color:#fff !important; display:flex; font-size:29px !important; font-weight:800 !important;
+      height:44px; justify-content:center; line-height:1; min-height:44px; min-width:48px;
+      padding:0 !important; transition:filter .16s ease,transform .16s ease; width:48px;
+    }
+    .st-key-language-control [data-testid="stPopover"] button:hover {
+      border-color:#ffffff80 !important; color:#fff !important; filter:brightness(1.08); transform:translateY(-1px);
+    }
+    .st-key-language-control [data-testid="stPopover"] button:focus-visible {
+      box-shadow:0 0 0 4px #8db2ff55,0 6px 16px rgba(60,100,220,.24) !important;
+    }
     div[data-testid="stTextInput"] [data-testid="InputInstructions"] { display:none !important; }
     [data-testid="stSelectbox"] input[role="combobox"] {
       color:__COR_TEXTO__ !important; -webkit-text-fill-color:__COR_TEXTO__ !important; opacity:1 !important;
@@ -209,7 +222,25 @@ estilo = (
       box-shadow:0 10px 30px rgba(33,58,99,.06); overflow:hidden;
     }
     [data-testid="stVerticalBlockBorderWrapper"] > div { background:transparent; }
-    .answer-label { color:var(--blue); font-size:12px; font-weight:800; letter-spacing:.08em; margin-bottom:9px; text-transform:uppercase; }
+    .answer-label { color:var(--blue); font-size:14px; font-weight:750; letter-spacing:0; margin-bottom:9px; text-transform:none; }
+    .ai-source-links { margin-top:14px; }
+    .web-result-source { align-items:center; display:flex; gap:10px; margin-bottom:7px; }
+    .web-result-favicon {
+      align-items:center; background:__COR_CAMPO__; border:1px solid __COR_BORDA__; border-radius:50%;
+      color:var(--blue); display:flex; flex:0 0 30px; font-size:13px; font-weight:800;
+      height:30px; justify-content:center; width:30px;
+    }
+    .web-result-domain { color:var(--ink); font-size:14px; font-weight:600; line-height:1.35; }
+    .web-result-url { color:var(--muted); font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+    .web-result-title {
+      color:var(--blue) !important; display:block; font-size:20px; font-weight:500;
+      line-height:1.35; margin:0 0 4px; text-decoration:none !important;
+    }
+    .web-result-title:hover { text-decoration:underline !important; }
+    .web-result-snippet { color:var(--ink); font-size:14px; line-height:1.55; }
+    .web-result-dates { color:var(--muted); font-size:12px; line-height:1.5; margin-top:6px; }
+    .web-result-actions [data-testid="stHorizontalBlock"] { align-items:center; gap:8px; }
+    .web-result-actions [data-testid="stButton"] button { min-height:38px; }
     .section-kicker { color:var(--muted); font-size:11px; font-weight:750; letter-spacing:1.2px; text-transform:uppercase; }
     [data-testid="stMarkdownContainer"] h2,
     [data-testid="stMarkdownContainer"] h3,
@@ -229,6 +260,7 @@ estilo = (
       .search-hero-caption { font-size:14px; }
       .search-hint { color:var(--muted); font-size:13px; line-height:1.5; }
       .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] { min-height:34px; }
+      .st-key-language-control [data-testid="stPopover"] button { border-radius:13px !important; height:42px; min-height:42px; min-width:46px; width:46px; }
       [data-testid="stSelectbox"] [role="combobox"] * { font-size:16px; }
       .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] * { font-size:11px; }
       div[data-testid="stButton"] button { font-size:15px; min-height:48px; line-height:1.3; }
@@ -302,13 +334,14 @@ TRADUCOES_UI = {
         "open_email": "Abrir o Gmail para enviar", "email_note": "Por segurança, o Knowix não envia e-mails sozinho: confira a mensagem no Gmail e toque em Enviar.",
         "searching": "Pesquisando páginas e vídeos ao mesmo tempo...", "cached": "Resultado recente carregado da sua sessão.",
         "empty_search": "Digite um assunto para começar a pesquisa.", "results_for": "RESULTADOS PARA",
-        "quick_answer": "✦ RESPOSTA DE IA", "answer_caption": "Resposta gerada por IA com base em páginas encontradas. Confira as fontes abaixo.",
+        "quick_answer": "✦ VISÃO GERAL CRIADA POR IA", "answer_caption": "Resposta gerada com base nas páginas encontradas. Confira as fontes consultadas abaixo.",
+        "sources_used": "Fontes consultadas para esta resposta",
         "source_answer": "✦ RESUMO DA FONTE", "source_answer_caption": "Este resumo vem da Wikipédia; configure a busca por IA para gerar uma resposta própria.",
         "answer_unspecified": "✦ RESPOSTA", "answer_unspecified_caption": "Abra as fontes abaixo para conferir os detalhes.",
         "no_answer": "Não consegui montar uma resposta direta agora. Veja os sites encontrados abaixo.",
         "featured_video": "▶ VÍDEO EM DESTAQUE", "related_video": "Vídeo relacionado", "no_video": "Não encontrei uma prévia de vídeo para este assunto.",
         "video_caption": "A prévia é reproduzida dentro do Knowix. Os controles do YouTube podem oferecer links externos.",
-        "more_videos": "Buscar mais vídeos no Knowix", "sites_found": "🌐 Sites encontrados", "read_source": "Ler fonte no Knowix",
+        "more_videos": "Buscar mais vídeos no Knowix", "sites_found": "Resultados da web", "read_source": "Ler fonte no Knowix",
         "no_sources": "Não encontrei páginas para esta pergunta.", "keep_exploring": "✨ Continue explorando",
         "suggestions_inside": "Sugestões de buscas dentro do Knowix", "source_back": "← Voltar aos resultados",
         "source_summary": "Resumo disponível no Knowix", "no_excerpt": "Esta fonte não forneceu um trecho de texto para prévia.",
@@ -385,14 +418,14 @@ TRADUCOES_UI = {
         "write_suggestion": "Write your suggestion before continuing.", "open_email": "Open Gmail to send",
         "email_note": "For your safety, Knowix does not send emails automatically. Review the message in Gmail and press Send.",
         "searching": "Searching pages and videos at the same time...", "cached": "Recent result loaded from your session.",
-        "empty_search": "Enter a topic to start searching.", "results_for": "RESULTS FOR", "quick_answer": "✦ AI ANSWER",
-        "answer_caption": "AI-generated answer based on found pages. Check the sources below.",
+        "empty_search": "Enter a topic to start searching.", "results_for": "RESULTS FOR", "quick_answer": "✦ AI OVERVIEW",
+        "answer_caption": "Answer based on the pages found. Check the sources consulted below.", "sources_used": "Sources consulted for this answer",
         "source_answer": "✦ SOURCE SUMMARY", "source_answer_caption": "This summary comes from Wikipedia; configure AI search to generate an answer.",
         "answer_unspecified": "✦ ANSWER", "answer_unspecified_caption": "Open the sources below to check the details.",
         "no_answer": "I couldn't create a direct answer right now. See the websites found below.", "featured_video": "▶ FEATURED VIDEO",
         "related_video": "Related video", "no_video": "I couldn't find a video preview for this topic.",
         "video_caption": "The preview plays inside Knowix. YouTube controls may offer external links.",
-        "more_videos": "Find more videos in Knowix", "sites_found": "🌐 Websites found", "read_source": "Read source in Knowix",
+        "more_videos": "Find more videos in Knowix", "sites_found": "Web results", "read_source": "Read source in Knowix",
         "no_sources": "I couldn't find pages for this question.", "keep_exploring": "✨ Keep exploring", "suggestions_inside": "Search suggestions inside Knowix",
         "source_back": "← Back to results", "source_summary": "Summary available in Knowix", "no_excerpt": "This source did not provide a text excerpt for preview.",
         "page_preview": "Page preview", "preview_note": "Some websites block embedded viewing. If the page does not load, the summary above is still available.",
@@ -468,14 +501,14 @@ TRADUCOES_UI = {
         "write_suggestion": "Escribe tu sugerencia antes de continuar.", "open_email": "Abrir Gmail para enviar",
         "email_note": "Por seguridad, Knowix no envía correos automáticamente. Revisa el mensaje en Gmail y pulsa Enviar.",
         "searching": "Buscando páginas y videos al mismo tiempo...", "cached": "Resultado reciente cargado desde tu sesión.",
-        "empty_search": "Escribe un tema para comenzar la búsqueda.", "results_for": "RESULTADOS PARA", "quick_answer": "✦ RESPUESTA DE IA",
-        "answer_caption": "Respuesta generada por IA a partir de páginas encontradas. Consulta las fuentes abajo.",
+        "empty_search": "Escribe un tema para comenzar la búsqueda.", "results_for": "RESULTADOS PARA", "quick_answer": "✦ RESUMEN GENERAL CON IA",
+        "answer_caption": "Respuesta basada en las páginas encontradas. Consulta las fuentes utilizadas abajo.", "sources_used": "Fuentes consultadas para esta respuesta",
         "source_answer": "✦ RESUMEN DE LA FUENTE", "source_answer_caption": "Este resumen proviene de Wikipedia; configura la búsqueda por IA para generar una respuesta.",
         "answer_unspecified": "✦ RESPUESTA", "answer_unspecified_caption": "Abre las fuentes de abajo para revisar los detalles.",
         "no_answer": "No pude preparar una respuesta directa ahora. Consulta los sitios encontrados abajo.", "featured_video": "▶ VIDEO DESTACADO",
         "related_video": "Video relacionado", "no_video": "No encontré una vista previa de video para este tema.",
         "video_caption": "La vista previa se reproduce dentro de Knowix. Los controles de YouTube pueden ofrecer enlaces externos.",
-        "more_videos": "Buscar más videos en Knowix", "sites_found": "🌐 Sitios encontrados", "read_source": "Leer fuente en Knowix",
+        "more_videos": "Buscar más videos en Knowix", "sites_found": "Resultados web", "read_source": "Leer fuente en Knowix",
         "no_sources": "No encontré páginas para esta pregunta.", "keep_exploring": "✨ Sigue explorando", "suggestions_inside": "Búsquedas sugeridas dentro de Knowix",
         "source_back": "← Volver a los resultados", "source_summary": "Resumen disponible en Knowix", "no_excerpt": "Esta fuente no proporcionó un fragmento de texto para la vista previa.",
         "page_preview": "Vista previa de la página", "preview_note": "Algunos sitios bloquean la visualización integrada. Si la página no carga, el resumen de arriba seguirá disponible.",
@@ -1300,7 +1333,7 @@ opcoes_secoes = {nome: secao for secao, nome in nomes_secoes.items()}
 rotulo_secoes = "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix"
 rotulo_menu = "Abrir menu de navegação do Knowix" if st.session_state.idioma_visual == "Português" else "Open Knowix navigation menu" if st.session_state.idioma_visual == "English" else "Abrir menú de navegación de Knowix"
 with st.container(key="language-control", horizontal=True, horizontal_alignment="right", gap=0):
-    with st.popover("⋮", help=rotulo_menu):
+    with st.popover("⋮", help=rotulo_menu, type="primary", width="content"):
         st.radio(
             rotulo_secoes,
             list(opcoes_secoes),
@@ -2359,11 +2392,8 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
         )
         filtro_resultados = st.session_state.filtro_resultados
 
-        if filtro_resultados in {"all", "videos"}:
-            col_resposta, col_video = st.columns([1.1, 0.9], gap="large")
-        else:
-            col_resposta = st.container()
-            col_video = None
+        col_resposta = st.container()
+        col_video = st.container() if filtro_resultados in {"all", "videos"} else None
         with col_resposta:
             with st.container(border=True):
                 origem_resposta = resultado_atual.get("resposta_gerada_por_ia")
@@ -2402,6 +2432,29 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                         ),
                         unsafe_allow_javascript=True,
                     )
+                    if origem_resposta is True and fontes:
+                        fontes_resposta = []
+                        dominios_resposta = set()
+                        for fonte_resposta in fontes:
+                            url_resposta = normalizar_url_http(fonte_resposta.get("url"))
+                            if not url_resposta:
+                                continue
+                            dominio_resposta = urlparse(url_resposta).netloc.removeprefix("www.")
+                            if not dominio_resposta or dominio_resposta.casefold() in dominios_resposta:
+                                continue
+                            dominios_resposta.add(dominio_resposta.casefold())
+                            fontes_resposta.append((dominio_resposta, url_resposta, fonte_resposta.get("title", dominio_resposta)))
+                            if len(fontes_resposta) == 3:
+                                break
+                        if fontes_resposta:
+                            st.markdown(f'<div class="answer-label ai-source-links">{texto_ui("sources_used")}</div>', unsafe_allow_html=True)
+                            colunas_citacoes = st.columns(len(fontes_resposta), gap="small")
+                            for indice_citacao, (dominio_citacao, url_citacao, titulo_citacao) in enumerate(fontes_resposta):
+                                with colunas_citacoes[indice_citacao]:
+                                    st.link_button(
+                                        f"{indice_citacao + 1} · {dominio_citacao}", url_citacao,
+                                        help=encurtar(titulo_citacao, 120), use_container_width=True,
+                                    )
                 else:
                     st.write(texto_ui("no_answer"))
 
@@ -2492,25 +2545,47 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                                 height=250,
                             )
 
-        fontes_exibidas = filtrar_fontes(fontes, filtro_resultados)
+        fontes_exibidas = [
+            fonte for fonte in filtrar_fontes(fontes, filtro_resultados)
+            if normalizar_url_http(fonte.get("url"))
+        ]
         if filtro_resultados in {"all", "sites", "news", "articles", "documents"}:
             st.markdown(f"### {texto_ui('sites_found')}")
         if fontes_exibidas and filtro_resultados in {"all", "sites", "news", "articles", "documents"}:
-            colunas_sites = st.columns(2, gap="medium")
             for indice, fonte in enumerate(fontes_exibidas[:8]):
-                with colunas_sites[indice % 2]:
-                    with st.container(border=True):
-                        if fonte.get("domain"):
-                            detalhes_fonte = [f"●  {fonte['domain']}"]
-                            if fonte.get("published_date"):
-                                detalhes_fonte.append(f"{texto_ui('published')}: {fonte['published_date']}")
-                            if fonte.get("consulted_at"):
-                                detalhes_fonte.append(f"{texto_ui('consulted')}: {fonte['consulted_at']}")
-                            st.caption(" • ".join(detalhes_fonte))
-                        col_titulo_fonte, col_favorito_fonte = st.columns([7, 1], gap="small")
-                        with col_titulo_fonte:
+                url_resultado = normalizar_url_http(fonte.get("url"))
+                partes_url = urlparse(url_resultado)
+                dominio_resultado = partes_url.netloc.removeprefix("www.")
+                titulo_resultado = str(fonte.get("title") or texto_ui("read_source"))[:240]
+                trecho_resultado = encurtar(fonte.get("content", ""), 260)
+                datas_resultado = []
+                if fonte.get("published_date"):
+                    datas_resultado.append(f"{texto_ui('published')}: {str(fonte['published_date'])[:80]}")
+                if fonte.get("consulted_at"):
+                    datas_resultado.append(f"{texto_ui('consulted')}: {str(fonte['consulted_at'])[:80]}")
+                titulo_html = escape(titulo_resultado)
+                dominio_html = escape(dominio_resultado)
+                url_html = escape(f"{dominio_resultado}{partes_url.path}"[:180], quote=True)
+                url_link_html = escape(url_resultado, quote=True)
+                trecho_html = escape(trecho_resultado)
+                datas_html = escape(" • ".join(datas_resultado))
+                inicial_dominio = escape((dominio_resultado[:1] or "W").upper())
+                with st.container(border=True):
+                    html_resultado = (
+                        f'<div class="web-result-source"><span class="web-result-favicon" aria-hidden="true">{inicial_dominio}</span>'
+                        f'<span><span class="web-result-domain">{dominio_html}</span><br>'
+                        f'<span class="web-result-url">{url_html}</span></span></div>'
+                        f'<a class="web-result-title" href="{url_link_html}" target="_blank" rel="noopener noreferrer">{titulo_html}</a>'
+                        f'<div class="web-result-snippet">{trecho_html}</div>'
+                    )
+                    if datas_html:
+                        html_resultado += f'<div class="web-result-dates">{datas_html}</div>'
+                    st.markdown(html_resultado, unsafe_allow_html=True)
+                    with st.container(key=f"web-result-actions-{indice}"):
+                        col_visualizar, col_favorito_fonte = st.columns([5, 1], gap="small")
+                        with col_visualizar:
                             st.button(
-                                encurtar(fonte.get("title", texto_ui("read_source")), 76),
+                                texto_ui("read_source"),
                                 key=f"fonte_interna_{indice}",
                                 on_click=abrir_fonte_no_knowix,
                                 args=(fonte,),
@@ -2518,10 +2593,10 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                             )
                         with col_favorito_fonte:
                             fonte_salva = any(
-                                item["type"] == "source" and item["url"] == fonte.get("url")
+                                item["type"] == "source" and item["url"] == url_resultado
                                 for item in st.session_state.dados_locais["favorites"]
                             )
-                            chave_favorito_fonte = uuid.uuid5(uuid.NAMESPACE_URL, fonte.get("url", str(indice))).hex
+                            chave_favorito_fonte = uuid.uuid5(uuid.NAMESPACE_URL, url_resultado).hex
                             st.button(
                                 texto_ui("favorite_source_saved") if fonte_salva else texto_ui("favorite_source"),
                                 key=f"alternar_fonte_{chave_favorito_fonte}",
@@ -2530,9 +2605,6 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
                                 args=(fonte, assunto),
                                 use_container_width=True,
                             )
-                        trecho = encurtar(fonte.get("content", ""), 210)
-                        if trecho:
-                            st.write(trecho)
         elif filtro_resultados in {"all", "sites", "news", "articles", "documents"}:
             if resultado_atual.get("status_pesquisa") != "erro":
                 st.info(texto_ui("no_sources"))
