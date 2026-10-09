@@ -1285,7 +1285,29 @@ if isinstance(resposta_storage, dict):
     elif resposta_storage.get("kind") == "error":
         st.session_state.erro_dados_locais = resposta_storage.get("reason", "storage")
 
+SECOES_APP = ["Pesquisar", "Nova aba", "Histórico", "Favoritos", "Pastas", "Projetos", "Configurações", "Sobre o app", "Sugestões"]
+nomes_secoes = {
+    secao: texto_ui(f"section_{secao}")
+    for secao in SECOES_APP
+}
+if "secao_canonica" not in st.session_state:
+    st.session_state.secao_canonica = "Pesquisar"
+if "secao_display" not in st.session_state or st.session_state.secao_canonica not in nomes_secoes:
+    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
+elif st.session_state.secao_display != nomes_secoes[st.session_state.secao_canonica]:
+    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
+opcoes_secoes = {nome: secao for secao, nome in nomes_secoes.items()}
+rotulo_secoes = "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix"
+rotulo_menu = "Abrir menu de navegação do Knowix" if st.session_state.idioma_visual == "Português" else "Open Knowix navigation menu" if st.session_state.idioma_visual == "English" else "Abrir menú de navegación de Knowix"
 with st.container(key="language-control", horizontal=True, horizontal_alignment="right", gap=0):
+    with st.popover("⋮", help=rotulo_menu):
+        st.radio(
+            rotulo_secoes,
+            list(opcoes_secoes),
+            key="secao_display",
+            on_change=sincronizar_secao_selecionada,
+            label_visibility="collapsed",
+        )
     st.selectbox(
         "🌐 Idioma" if st.session_state.idioma_visual != "English" else "🌐 Language",
         ["Português", "English", "Español"],
@@ -1679,27 +1701,7 @@ def buscar_resultados(assunto, chave_tavily, modo="rapida", progresso=None):
     return dados, False
 
 
-SECOES_APP = ["Pesquisar", "Nova aba", "Histórico", "Favoritos", "Pastas", "Projetos", "Configurações", "Sobre o app", "Sugestões"]
-nomes_secoes = {
-    secao: texto_ui(f"section_{secao}")
-    for secao in SECOES_APP
-}
-if "secao_canonica" not in st.session_state:
-    st.session_state.secao_canonica = "Pesquisar"
-if "secao_display" not in st.session_state or st.session_state.secao_canonica not in nomes_secoes:
-    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
-elif st.session_state.secao_display != nomes_secoes[st.session_state.secao_canonica]:
-    st.session_state.secao_display = nomes_secoes[st.session_state.secao_canonica]
-opcoes_secoes = {nome: secao for secao, nome in nomes_secoes.items()}
-rotulo_secoes = "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix"
-secao_selecionada = st.selectbox(
-    rotulo_secoes,
-    list(opcoes_secoes),
-    key="secao_display",
-    on_change=sincronizar_secao_selecionada,
-    label_visibility="collapsed",
-)
-secao_app = opcoes_secoes[secao_selecionada]
+secao_app = opcoes_secoes[st.session_state.secao_display]
 st.session_state.secao_canonica = secao_app
 
 buscar = False
