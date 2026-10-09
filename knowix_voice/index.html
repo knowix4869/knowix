@@ -5,29 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       * { box-sizing: border-box; }
-      body { color: #14213d; font: 12px Arial, sans-serif; margin: 0; padding: 2px 0 0; }
-      .voice-control { text-align: right; width: 100%; }
+      :root { color-scheme:light; }
+      :root[data-theme="dark"] { color-scheme:dark; }
+      body { color: #14213d; font: 12px Arial, sans-serif; margin: 0; padding: 1px 0 0; }
+      .voice-control { margin:0 auto; max-width:150px; text-align:center; width:100%; }
       button {
-        align-items: center; background: #fff; border: 1px solid #dce4f0;
-        border-radius: 13px; color: #14213d; cursor: pointer; display: inline-flex;
-        font: 600 14px Arial, sans-serif; gap: 8px; justify-content: center;
-        min-height: 42px; padding: 0 15px;
+        align-items: center; background: linear-gradient(135deg,#176eae,#485fea 65%,#7557df);
+        border: 1px solid transparent; border-radius: 15px; box-shadow:0 7px 18px #425edb33;
+        color: #fff; cursor: pointer; display: flex; font: 650 13px Arial, sans-serif;
+        gap: 7px; justify-content: center; min-height: 48px; padding: 0 10px;
+        transition:filter .16s ease,transform .16s ease,box-shadow .16s ease;
+        touch-action:manipulation; width:100%;
       }
-      button:hover { border-color: #246bfe; color: #246bfe; }
-      button:focus-visible { outline: 3px solid #246bfe55; }
-      button.is-listening { background: #fff1f1; border-color: #e75c65; color: #b42332; }
-      .status { color: #69758c; line-height: 1.35; margin: 4px 0 0; text-align: left; }
-      @media (prefers-color-scheme: dark) {
-        body { color: #eef3ff; }
-        button { background: #172235; border-color: #33425a; color: #eef3ff; }
-        .status { color: #adbad0; }
+      button:hover { box-shadow:0 9px 22px #425edb44; filter:brightness(1.06); transform:translateY(-1px); }
+      button:active { filter:brightness(.98); transform:scale(.98); }
+      button:focus-visible { outline:3px solid #246bfe66; outline-offset:3px; }
+      button.is-listening { animation:voice-pulse 1.5s ease-in-out infinite; background:linear-gradient(135deg,#b52e55,#db4e67); }
+      .mic-icon { flex:none; height:19px; width:19px; }
+      .status { color: #69758c; font-size:10px; line-height:1.35; margin:5px 1px 0; text-align:center; }
+      @keyframes voice-pulse { 50% { box-shadow:0 0 0 5px #d9446330,0 7px 18px #d9446330; } }
+      :root[data-theme="dark"] body {
+        color: #eef3ff;
       }
+      :root[data-theme="dark"] .status { color:#adbad0; }
+      @media (prefers-reduced-motion:reduce) { button { transition:none; } button.is-listening { animation:none; } }
     </style>
   </head>
   <body>
     <div class="voice-control">
       <button id="voice-button" type="button">
-        <span aria-hidden="true">🎙️</span><span id="button-label">Pesquisar por voz</span>
+        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" stroke-width="2"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="button-label">Pesquisar por voz</span>
       </button>
       <p class="status" id="voice-status" role="status" aria-live="polite"></p>
     </div>
@@ -123,6 +130,7 @@
         if (event.data?.type !== "streamlit:render") return;
         const args = event.data.args || {};
         labels = args.labels || {};
+        document.documentElement.dataset.theme = labels.theme === "dark" ? "dark" : "light";
         language = args.language || "pt-BR";
         buttonLabel.textContent = labels.button || "Search by voice";
         status.textContent = labels.privacy || "";
@@ -134,8 +142,8 @@
         streamlit.height();
       });
 
-      streamlit.height();
       streamlit.ready();
+      streamlit.height();
     </script>
   </body>
 </html>
