@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f4f7fc">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f4f7fc" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0d1422" media="(prefers-color-scheme: dark)">
     <meta name="description" content="Pesquise no Knowix e confira respostas, fontes e vídeos relacionados.">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://knowix4869-knowix.streamlit.app; form-action 'none'">
     <link rel="manifest" href="./manifest.webmanifest">
@@ -11,9 +13,11 @@
     <title>Knowix</title>
     <style>
       html, body, main { width: 100%; height: 100%; margin: 0; }
-      body { overflow: hidden; background: #f4f7fc; }
+      :root { color-scheme: light dark; --shell-bg:#f4f7fc; }
+      body { overflow: hidden; background: var(--shell-bg); }
       main { overflow: hidden; }
-      iframe { display: block; width: 100%; height: calc(100% + 52px); border: 0; background: #f4f7fc; }
+      iframe { display: block; width: 100%; height: calc(100% + 52px); border: 0; background: var(--shell-bg); }
+      @media (prefers-color-scheme: dark) { :root { --shell-bg:#0d1422; } }
     </style>
   </head>
   <body>
@@ -24,6 +28,24 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
       }
+      const appFrame = document.querySelector('iframe');
+      const themeColors = document.querySelectorAll('meta[name="theme-color"]');
+      function applyKnowixTheme(theme) {
+        if (theme !== 'light' && theme !== 'dark') return;
+        const color = theme === 'dark' ? '#0d1422' : '#f4f7fc';
+        document.documentElement.style.setProperty('--shell-bg', color);
+        themeColors.forEach(meta => meta.setAttribute('content', color));
+        if (window.KnowixAndroidTheme) window.KnowixAndroidTheme.postMessage(theme);
+      }
+      window.addEventListener('message', event => {
+        const fromKnowixFrame = event.source === appFrame.contentWindow
+          || event.source?.parent === appFrame.contentWindow;
+        if (!fromKnowixFrame
+            || event.origin !== 'https://knowix4869-knowix.streamlit.app'
+            || event.data?.type !== 'knowix-theme') return;
+        applyKnowixTheme(event.data.theme);
+      });
+      applyKnowixTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     </script>
   </body>
 </html>

@@ -52,7 +52,10 @@ componente_callback_conta = components.declare_component(
 )
 
 if "tema_visual" not in st.session_state:
-    st.session_state.tema_visual = "Claro"
+    st.session_state.tema_visual = "Sistema"
+if st.session_state.get("tema_visual") not in {"Claro", "Escuro", "Sistema"}:
+    st.session_state.tema_visual = "Sistema"
+st.session_state.setdefault("tema_sistema", "light")
 # Atualiza a preferência de sessões anteriores para evitar que uma configuração
 # antiga em inglês faça a tela abrir nesse idioma após a correção.
 if st.session_state.get("versao_idioma_visual") != 2:
@@ -63,7 +66,9 @@ elif st.session_state.get("idioma_visual") not in {"Português", "English", "Esp
 if "cache_traducoes" not in st.session_state:
     st.session_state.cache_traducoes = {}
 
-tema_escuro = st.session_state.tema_visual == "Escuro"
+tema_escuro = st.session_state.tema_visual == "Escuro" or (
+    st.session_state.tema_visual == "Sistema" and st.session_state.tema_sistema == "dark"
+)
 cor_fundo = "#0d1422" if tema_escuro else "#f4f7fc"
 cor_cartao = "#172235" if tema_escuro else "#ffffff"
 cor_texto = "#eef3ff" if tema_escuro else "#14213d"
@@ -331,7 +336,7 @@ TRADUCOES_UI = {
         "history_title": "Pesquisas recentes", "history_empty": "Suas pesquisas aparecerão aqui depois da primeira busca.",
         "history_filter": "Pesquisar no histórico",
         "settings_title": "Configurações", "appearance": "Aparência", "theme_label": "Tema do Knowix",
-        "theme_caption": "A aparência muda imediatamente e fica ativa enquanto esta sessão estiver aberta.",
+        "theme_caption": "Escolha claro, escuro ou Sistema para acompanhar a configuração do dispositivo.",
         "privacy": "Privacidade", "history_privacy": "Histórico, favoritos, pastas, projetos e preferências ficam somente neste navegador. Use a opção de apagar para remover o histórico deste dispositivo.",
         "clear_history": "Apagar histórico deste navegador", "history_cleared": "Histórico apagado.",
         "favorite_title": "Favoritos", "favorite_empty": "Salve uma pesquisa ou fonte para encontrá-la aqui.",
@@ -416,7 +421,7 @@ TRADUCOES_UI = {
         "history_title": "Recent searches", "history_empty": "Your searches will appear here after your first search.",
         "history_filter": "Search history",
         "settings_title": "Settings", "appearance": "Appearance", "theme_label": "Knowix theme",
-        "theme_caption": "The appearance changes immediately and stays active while this session is open.",
+        "theme_caption": "Choose light, dark, or System to follow this device’s appearance setting.",
         "privacy": "Privacy", "history_privacy": "History, favorites, folders, projects, and preferences stay in this browser. Use the clear option to remove history from this device.",
         "clear_history": "Clear browser history", "history_cleared": "History cleared.",
         "favorite_title": "Favorites", "favorite_empty": "Save a search or source to find it here.",
@@ -499,7 +504,7 @@ TRADUCOES_UI = {
         "history_title": "Búsquedas recientes", "history_empty": "Tus búsquedas aparecerán aquí después de la primera búsqueda.",
         "history_filter": "Buscar en el historial",
         "settings_title": "Configuración", "appearance": "Apariencia", "theme_label": "Tema de Knowix",
-        "theme_caption": "La apariencia cambia inmediatamente y permanece activa mientras esta sesión esté abierta.",
+        "theme_caption": "Elige claro, oscuro o Sistema para seguir la apariencia del dispositivo.",
         "privacy": "Privacidad", "history_privacy": "El historial, los favoritos, las carpetas, los proyectos y las preferencias quedan en este navegador. Usa la opción de borrar para quitar el historial de este dispositivo.",
         "clear_history": "Borrar el historial de este navegador", "history_cleared": "Historial borrado.",
         "favorite_title": "Favoritos", "favorite_empty": "Guarda una búsqueda o fuente para encontrarla aquí.",
@@ -646,11 +651,11 @@ def guardar_preferencias_local():
     if "dados_locais" not in st.session_state:
         return
     idioma = st.session_state.get("idioma_visual", "Português")
-    tema = st.session_state.get("tema_visual", "Claro")
+    tema = st.session_state.get("tema_visual", "Sistema")
     if idioma not in {"Português", "English", "Español"}:
         idioma = "Português"
-    if tema not in {"Claro", "Escuro"}:
-        tema = "Claro"
+    if tema not in {"Claro", "Escuro", "Sistema"}:
+        tema = "Sistema"
     st.session_state.dados_locais["preferences"] = {"language": idioma, "theme": tema}
     st.session_state.preferencias_locais_tocadas = True
     marcar_dados_locais_alterados()
@@ -661,11 +666,12 @@ def sincronizar_idioma_selecionado():
 
 
 def sincronizar_tema_selecionado():
-    """Guarda Claro/Escuro independentemente do idioma do rótulo visível."""
+    """Guarda a opção de tema independentemente do idioma do rótulo visível."""
     idioma = st.session_state.idioma_visual
     nomes = {
         "Claro": "Light" if idioma == "English" else "Claro",
         "Escuro": "Dark" if idioma == "English" else "Oscuro" if idioma == "Español" else "Escuro",
+        "Sistema": "System" if idioma == "English" else "Sistema",
     }
     opcoes = {nome: tema for tema, nome in nomes.items()}
     selecionado = st.session_state.get("tema_display")
@@ -755,7 +761,7 @@ def traduzir_resultado(dados):
 def estado_local_vazio():
     return {"version": 1, "history": [], "favorites": [], "folders": [], "projects": [],
             "folder_notes": {}, "folder_notes_updated_at": {}, "sync_tombstones": {"history": {}, "favorites": {}},
-            "preferences": {"language": "Português", "theme": "Claro"}}
+            "preferences": {"language": "Português", "theme": "Sistema"}}
 
 
 _SAL_RATE_LIMIT = os.urandom(32)
@@ -923,7 +929,7 @@ def normalizar_dados_locais(valor):
                          "searches": buscas_projeto[:30], "sources": fontes_projeto[:100]})
     preferencias = valor.get("preferences") if isinstance(valor.get("preferences"), dict) else {}
     idioma = preferencias.get("language") if preferencias.get("language") in {"Português", "English", "Español"} else "Português"
-    tema = preferencias.get("theme") if preferencias.get("theme") in {"Claro", "Escuro"} else "Claro"
+    tema = preferencias.get("theme") if preferencias.get("theme") in {"Claro", "Escuro", "Sistema"} else "Sistema"
     notas_pasta_raw = valor.get("folder_notes") if isinstance(valor.get("folder_notes"), dict) else {}
     notas_pasta = {pasta: str(notas_pasta_raw.get(pasta, ""))[:12000] for pasta in pastas if pasta in notas_pasta_raw}
     notas_pasta_atualizadas_raw = valor.get("folder_notes_updated_at") if isinstance(valor.get("folder_notes_updated_at"), dict) else {}
@@ -1267,6 +1273,14 @@ resposta_storage = componente_dados_locais(
     height=1,
 )
 if isinstance(resposta_storage, dict):
+    tema_sistema_recebido = resposta_storage.get("systemTheme")
+    tema_sistema_anterior = st.session_state.tema_sistema
+    if tema_sistema_recebido in {"light", "dark"}:
+        st.session_state.tema_sistema = tema_sistema_recebido
+        if (tema_sistema_anterior != tema_sistema_recebido
+                and st.session_state.tema_visual == "Sistema"
+                and resposta_storage.get("kind") != "loaded"):
+            st.rerun()
     if resposta_storage.get("kind") == "loaded" and not st.session_state.dados_locais_carregados:
         dados_navegador = normalizar_dados_locais(resposta_storage.get("data"))
         if st.session_state.dados_locais_pendente:
@@ -1318,6 +1332,8 @@ if isinstance(resposta_storage, dict):
         preferencia_mudou = (
             st.session_state.idioma_visual != preferencias_salvas["language"]
             or st.session_state.tema_visual != preferencias_salvas["theme"]
+            or (tema_sistema_anterior != st.session_state.tema_sistema
+                and preferencias_salvas["theme"] == "Sistema")
         )
         st.session_state.idioma_visual = preferencias_salvas["language"]
         st.session_state.tema_visual = preferencias_salvas["theme"]
@@ -2289,6 +2305,7 @@ elif secao_app == "Configurações":
     nomes_temas = {
         "Claro": "Light" if st.session_state.idioma_visual == "English" else "Claro",
         "Escuro": "Dark" if st.session_state.idioma_visual == "English" else "Oscuro" if st.session_state.idioma_visual == "Español" else "Escuro",
+        "Sistema": "System" if st.session_state.idioma_visual == "English" else "Sistema",
     }
     tema_exibido = nomes_temas[st.session_state.tema_visual]
     if st.session_state.get("tema_display") != tema_exibido:
