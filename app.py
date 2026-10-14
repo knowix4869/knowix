@@ -139,28 +139,32 @@ estilo = (
       min-height:48px; white-space:normal;
     }
     div[data-testid="stButton"] button:hover { border-color:__COR_AZUL__; color:__COR_AZUL__ !important; }
-    .brand-row { align-items:center; display:flex; gap:12px; justify-content:center; margin:1.2rem auto 1.35rem; }
+    .st-key-app-topbar { margin:0 auto 1rem; max-width:900px; }
+    .st-key-app-topbar [data-testid="stHorizontalBlock"] { align-items:center; justify-content:space-between; gap:12px; }
+    .st-key-app-topbar .brand-row { align-items:center; display:flex; flex:0 0 auto; gap:9px; justify-content:flex-start; margin:0; }
     .brand-mark {
       align-items:center; background:linear-gradient(145deg,#20b6a5 0%,#3278f6 56%,#7658ed 100%);
-      border:1px solid #ffffff38; border-radius:17px; box-shadow:0 10px 24px rgba(42,111,205,.24);
-      color:#fff; display:flex; height:48px; justify-content:center; width:48px;
+      border:1px solid #ffffff38; border-radius:13px; box-shadow:0 5px 14px rgba(42,111,205,.18);
+      color:#fff; display:flex; height:36px; justify-content:center; width:36px;
     }
-    .brand-mark svg { height:27px; width:27px; }
-    .brand-name { color:var(--ink); font-size:34px; font-weight:800; letter-spacing:-1.5px; }
+    .brand-mark svg { height:22px; width:22px; }
+    .brand-name { color:var(--ink); font-size:23px; font-weight:800; letter-spacing:-.9px; }
     .search-hint { color:var(--muted); font-size:13px; line-height:1.5; margin:10px 4px 0; text-align:center; }
-    .st-key-search-hero { margin:0 auto 1rem; max-width:780px; text-align:center; }
-    .search-hero-title { color:var(--ink); font-size:clamp(25px,4vw,36px); font-weight:750; letter-spacing:-1.1px; line-height:1.18; margin:0 0 9px; }
-    .search-hero-caption { color:var(--muted); font-size:15px; line-height:1.55; margin:0 auto; max-width:610px; }
-    .st-key-search-action-row { margin:0 auto; max-width:900px; }
-    .st-key-search-action-row [data-testid="stHorizontalBlock"] { align-items:center; gap:12px; }
+    .st-key-search-hero { margin:clamp(2.1rem,8vh,5rem) auto 1.15rem; max-width:760px; text-align:center; }
+    .search-hero-title { color:var(--ink); font-size:clamp(27px,4vw,36px); font-weight:750; letter-spacing:-1.1px; line-height:1.18; margin:0 0 7px; }
+    .search-hero-caption { color:var(--muted); font-size:14px; line-height:1.5; margin:0 auto; max-width:540px; }
+    .st-key-search-action-row { margin:0 auto; max-width:820px; }
+    .st-key-search-action-row [data-testid="stHorizontalBlock"] { align-items:center; gap:8px; }
     .st-key-search-action-row [data-testid="column"] { min-width:0; }
+    .st-key-search-action-row [data-testid="stHorizontalBlock"]:has(.st-key-formulario_pesquisa) > [data-testid="column"]:first-child { flex:1 1 auto !important; width:auto !important; }
+    .st-key-search-action-row [data-testid="stHorizontalBlock"]:has(.st-key-formulario_pesquisa) > [data-testid="column"]:last-child { flex:0 0 58px !important; width:58px !important; }
     .st-key-search-action-row .st-key-formulario_pesquisa[data-testid="stForm"] {
-      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
-      box-shadow:0 14px 40px rgba(33,58,99,.10); margin:0; max-width:none; padding:10px 12px;
+      background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:20px;
+      box-shadow:0 10px 28px rgba(33,58,99,.10); margin:0; max-width:none; padding:7px 8px;
       transition:border-color .18s ease, box-shadow .18s ease;
     }
     .st-key-search-action-row .st-key-formulario_pesquisa[data-testid="stForm"]:focus-within {
-      border-color:__COR_AZUL__; box-shadow:0 0 0 4px #8db2ff24,0 16px 42px rgba(33,58,99,.12);
+      border-color:__COR_AZUL__; box-shadow:0 0 0 4px #8db2ff24,0 12px 32px rgba(33,58,99,.12);
     }
     .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stHorizontalBlock"] { align-items:center; gap:8px; }
     .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="column"] { min-width:0; }
@@ -172,9 +176,9 @@ estilo = (
       background:__COR_CAMPO__; border-color:transparent; box-shadow:none;
     }
     .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stFormSubmitButton"] button {
-      background:linear-gradient(135deg,#176eae,#485fea 65%,#7557df); border:0; border-radius:14px;
-      box-shadow:0 6px 15px rgba(60,100,220,.22); color:#fff !important; min-height:48px;
-      padding:0 18px; transition:transform .16s ease,filter .16s ease;
+      background:#246bfe; border:0; border-radius:14px;
+      box-shadow:0 4px 11px rgba(36,107,254,.18); color:#fff !important; min-height:48px;
+      padding:0 16px; transition:transform .16s ease,filter .16s ease;
     }
     .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stFormSubmitButton"] button:hover {
       color:#fff !important; filter:brightness(1.06); transform:translateY(-1px);
@@ -185,7 +189,9 @@ estilo = (
     .st-key-search-action-row iframe { display:block; }
     .st-key-search-action-row [data-testid="stElementContainer"]:has(iframe) { margin:auto 0; }
     .st-key-search-action-row [data-testid="stElementContainer"]:has(iframe) iframe { width:100%; }
-    .st-key-search-history { margin:1.7rem auto 0; max-width:820px; }
+    .st-key-search-mode { margin:.35rem auto 0; max-width:820px; }
+    .st-key-search-mode [data-testid="stRadio"] > div { gap:6px; justify-content:center; }
+    .st-key-search-history { margin:2rem auto 0; max-width:820px; }
     .st-key-search-history h4 { color:var(--ink); font-size:15px; font-weight:700; margin-bottom:.65rem; }
     .st-key-search-history [data-testid="stButton"] button {
       background:__COR_CARTAO__; border-color:__COR_BORDA__; border-radius:14px;
@@ -250,29 +256,31 @@ estilo = (
       padding:18px;
     }
     @media (max-width:700px) {
-      .block-container { padding:.65rem .8rem 1rem; }
-      .brand-row { gap:9px; margin:.55rem auto 1rem; }
-      .brand-mark { width:42px; height:42px; border-radius:14px; }
-      .brand-mark svg { height:24px; width:24px; }
-      .brand-name { font-size:29px; }
-      .st-key-search-hero { margin-bottom:.8rem; }
-      .search-hero-title { font-size:27px; letter-spacing:-.7px; }
-      .search-hero-caption { font-size:14px; }
+      .block-container { padding:.45rem .8rem 1rem; }
+      .st-key-app-topbar { margin-bottom:.65rem; }
+      .st-key-app-topbar [data-testid="stHorizontalBlock"] { gap:6px; }
+      .st-key-app-topbar .brand-row { gap:7px; }
+      .brand-mark { width:34px; height:34px; border-radius:12px; }
+      .brand-mark svg { height:21px; width:21px; }
+      .brand-name { font-size:21px; }
+      .st-key-search-hero { margin:clamp(2.3rem,9vh,4rem) auto 1rem; }
+      .search-hero-title { font-size:26px; letter-spacing:-.7px; }
+      .search-hero-caption { font-size:13px; }
       .search-hint { color:var(--muted); font-size:13px; line-height:1.5; }
       .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] { min-height:34px; }
       .st-key-language-control [data-testid="stPopover"] button { border-radius:13px !important; height:42px; min-height:42px; min-width:46px; width:46px; }
       [data-testid="stSelectbox"] [role="combobox"] * { font-size:16px; }
       .st-key-language-control [data-testid="stSelectbox"] [role="combobox"] * { font-size:11px; }
       div[data-testid="stButton"] button { font-size:15px; min-height:48px; line-height:1.3; }
-      .st-key-search-action-row [data-testid="stHorizontalBlock"] { flex-direction:column; gap:8px; }
-      .st-key-search-action-row [data-testid="column"] { flex:1 1 100% !important; width:100% !important; }
-      .st-key-search-action-row .st-key-formulario_pesquisa[data-testid="stForm"] { border-radius:18px; padding:8px; }
+      .st-key-search-action-row [data-testid="stHorizontalBlock"] { flex-direction:row; gap:7px; }
+      .st-key-search-action-row .st-key-formulario_pesquisa[data-testid="stForm"] { border-radius:18px; padding:6px; }
       .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stHorizontalBlock"] { flex-direction:row; }
-      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="column"]:first-child { flex:1 1 68% !important; width:68% !important; }
-      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="column"]:last-child { flex:0 0 29% !important; width:29% !important; }
+      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="column"]:first-child { flex:1 1 auto !important; width:auto !important; }
+      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="column"]:last-child { flex:0 0 98px !important; width:98px !important; }
       .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stTextInput"] input { font-size:16px; padding:0 10px; }
-      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stFormSubmitButton"] button { font-size:14px; padding:0 8px; }
-      .st-key-search-history { margin-top:1.25rem; }
+      .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stFormSubmitButton"] button { font-size:13px; padding:0 8px; }
+      .st-key-search-mode [data-testid="stRadio"] > div { justify-content:center; }
+      .st-key-search-history { margin-top:1.65rem; }
       .st-key-search-history [data-testid="stHorizontalBlock"] { gap:8px; }
       [data-testid="stVerticalBlockBorderWrapper"] { border-radius:16px; }
       div[data-testid="stForm"]:not(.st-key-formulario_pesquisa) { border-radius:16px; padding:10px; }
@@ -299,9 +307,9 @@ TRADUCOES_UI = {
         "section_Pesquisar": "Pesquisar", "section_Nova aba": "Nova aba",
         "section_Histórico": "Histórico", "section_Favoritos": "Favoritos", "section_Pastas": "Pastas", "section_Projetos": "Projetos", "section_Configurações": "Configurações",
         "section_Sobre o app": "Sobre o app", "section_Sugestões": "Sugestões",
-        "search_placeholder": "⌕  Pergunte ao Knowix…",
+        "search_placeholder": "⌕  Pesquise na web ou pergunte ao Knowix…",
         "search_hero_title": "O que você quer descobrir?",
-        "search_hero_caption": "Faça sua pergunta. Encontre respostas organizadas e fontes para explorar.",
+        "search_hero_caption": "Pesquise respostas e fontes para explorar.",
         "search_button": "Pesquisar", "new_search_title": "Abra uma nova pesquisa",
         "new_search_caption": "Inicie outra busca sem apagar o histórico desta sessão.",
         "new_search_label": "O que quer pesquisar nesta nova aba?",
@@ -387,8 +395,8 @@ TRADUCOES_UI = {
     "English": {
         "section_Pesquisar": "Search", "section_Nova aba": "New tab", "section_Histórico": "History", "section_Favoritos": "Favorites", "section_Pastas": "Folders", "section_Projetos": "Projects",
         "section_Configurações": "Settings", "section_Sobre o app": "About the app", "section_Sugestões": "Suggestions",
-        "search_placeholder": "⌕  Ask Knowix anything…", "search_hero_title": "What would you like to discover?",
-        "search_hero_caption": "Ask a question. Explore organized answers and the sources behind them.", "search_button": "Search",
+        "search_placeholder": "⌕  Search the web or ask Knowix…", "search_hero_title": "What would you like to discover?",
+        "search_hero_caption": "Search for answers and sources to explore.", "search_button": "Search",
         "new_search_title": "Start a new search", "new_search_caption": "Start another search without clearing this session's history.",
         "new_search_label": "What would you like to search in this new tab?", "new_search_placeholder": "Enter another question or topic...",
         "new_search_button": "Search in this tab", "search_hint": "Explore topics, questions, news, science, technology, and more.",
@@ -470,8 +478,8 @@ TRADUCOES_UI = {
     "Español": {
         "section_Pesquisar": "Buscar", "section_Nova aba": "Nueva pestaña", "section_Histórico": "Historial", "section_Favoritos": "Favoritos", "section_Pastas": "Carpetas", "section_Projetos": "Proyectos",
         "section_Configurações": "Configuración", "section_Sobre o app": "Acerca de la app", "section_Sugestões": "Sugerencias",
-        "search_placeholder": "⌕  Pregunta lo que quieras a Knowix…", "search_hero_title": "¿Qué quieres descubrir?",
-        "search_hero_caption": "Haz tu pregunta. Explora respuestas organizadas y sus fuentes.", "search_button": "Buscar",
+        "search_placeholder": "⌕  Busca en la web o pregunta a Knowix…", "search_hero_title": "¿Qué quieres descubrir?",
+        "search_hero_caption": "Busca respuestas y fuentes para explorar.", "search_button": "Buscar",
         "new_search_title": "Iniciar una nueva búsqueda", "new_search_caption": "Inicia otra búsqueda sin borrar el historial de esta sesión.",
         "new_search_label": "¿Qué quieres buscar en esta nueva pestaña?", "new_search_placeholder": "Escribe otra pregunta o tema...",
         "new_search_button": "Buscar en esta pestaña", "search_hint": "Explora temas, preguntas, noticias, ciencia, tecnología y mucho más.",
@@ -1332,33 +1340,33 @@ elif st.session_state.secao_display != nomes_secoes[st.session_state.secao_canon
 opcoes_secoes = {nome: secao for secao, nome in nomes_secoes.items()}
 rotulo_secoes = "Escolha uma seção do Knowix" if st.session_state.idioma_visual == "Português" else "Choose a Knowix section" if st.session_state.idioma_visual == "English" else "Elige una sección de Knowix"
 rotulo_menu = "Abrir menu de navegação do Knowix" if st.session_state.idioma_visual == "Português" else "Open Knowix navigation menu" if st.session_state.idioma_visual == "English" else "Abrir menú de navegación de Knowix"
-with st.container(key="language-control", horizontal=True, horizontal_alignment="right", gap=0):
-    with st.popover("⋮", help=rotulo_menu, type="primary", width="content"):
-        st.radio(
-            rotulo_secoes,
-            list(opcoes_secoes),
-            key="secao_display",
-            on_change=sincronizar_secao_selecionada,
-            label_visibility="collapsed",
-        )
-    st.selectbox(
-        "🌐 Idioma" if st.session_state.idioma_visual != "English" else "🌐 Language",
-        ["Português", "English", "Español"],
-        key="idioma_visual",
-        format_func=lambda idioma: f"🌐 {idioma}",
-        label_visibility="collapsed",
-        width=124,
-        on_change=sincronizar_idioma_selecionado,
+with st.container(key="app-topbar", horizontal=True, horizontal_alignment="distribute", gap="small"):
+    st.markdown(
+        """
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 24V8m0 9 9-9m-9 9 10 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="m23 10 1.25 3.75L28 15l-3.75 1.25L23 20l-1.25-3.75L18 15l3.75-1.25L23 10Z" fill="currentColor"/></svg></div><div class="brand-name">Knowix</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-
-st.markdown(
-    f"""
-    <div class="brand-row">
-      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 24V8m0 9 9-9m-9 9 10 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="m23 10 1.25 3.75L28 15l-3.75 1.25L23 20l-1.25-3.75L18 15l3.75-1.25L23 10Z" fill="currentColor"/></svg></div><div class="brand-name">Knowix</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+    with st.container(key="language-control", horizontal=True, horizontal_alignment="right", gap=0):
+        with st.popover("⋮", help=rotulo_menu, type="primary", width="content"):
+            st.radio(
+                rotulo_secoes,
+                list(opcoes_secoes),
+                key="secao_display",
+                on_change=sincronizar_secao_selecionada,
+                label_visibility="collapsed",
+            )
+        st.selectbox(
+            "🌐 Idioma" if st.session_state.idioma_visual != "English" else "🌐 Language",
+            ["Português", "English", "Español"],
+            key="idioma_visual",
+            format_func=lambda idioma: f"🌐 {idioma}",
+            label_visibility="collapsed",
+            width=124,
+            on_change=sincronizar_idioma_selecionado,
+        )
 if st.session_state.erro_dados_locais:
     st.warning(texto_ui("storage_error"))
 
@@ -1856,7 +1864,7 @@ if secao_app == "Pesquisar":
         "Español": "El audio puede enviarse al servicio de reconocimiento del navegador o dispositivo. Knowix recibe solo la transcripción y busca cuando confirmes.",
     }[st.session_state.idioma_visual]
     with st.container(key="search-action-row"):
-        col_busca, col_voz = st.columns([8, 2], vertical_alignment="center", gap="small")
+        col_busca, col_voz = st.columns([1, 0.11], vertical_alignment="center", gap="small")
         # Keep the voice bridge before the query widget so Android transcripts
         # can initialize the input before Streamlit creates it.
         with col_voz:
@@ -1865,7 +1873,7 @@ if secao_app == "Pesquisar":
                 labels=textos_voz,
                 default=None,
                 key="pesquisa_por_voz",
-                height=80,
+                height=56,
             )
         if isinstance(resultado_voz, dict):
             texto_reconhecido = str(resultado_voz.get("transcript", "")).strip()
@@ -1918,10 +1926,10 @@ elif secao_app == "Nova aba":
         elif not chave_tavily_configurada:
             st.caption(texto_ui("deep_needs_key"))
 if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
-    with st.container(key="search-history"):
-        st.markdown(f"#### {texto_ui('recent_home')}")
-        pesquisas_recentes = st.session_state.historico_pesquisas[:4]
-        if pesquisas_recentes:
+    pesquisas_recentes = st.session_state.historico_pesquisas[:4]
+    if pesquisas_recentes:
+        with st.container(key="search-history"):
+            st.markdown(f"#### {texto_ui('recent_home')}")
             colunas_recentes = st.columns(min(2, len(pesquisas_recentes)), gap="small")
             for indice, pesquisa_recente in enumerate(pesquisas_recentes):
                 with colunas_recentes[indice % len(colunas_recentes)]:
@@ -1932,8 +1940,6 @@ if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
                         args=(pesquisa_recente,),
                         use_container_width=True,
                     )
-        else:
-            st.caption(texto_ui("recent_home_empty"))
 
 busca_pendente = st.session_state.busca_pendente
 if busca_pendente:
