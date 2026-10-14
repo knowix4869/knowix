@@ -201,12 +201,14 @@ estilo = (
     .st-key-search-history [data-testid="stButton"] button:hover { border-color:__COR_AZUL__; color:__COR_AZUL__ !important; transform:translateY(-1px); }
     .st-key-search-shortcuts { margin:1.15rem auto 0; max-width:820px; }
     .st-key-search-shortcuts h4 { color:var(--ink); font-size:15px; font-weight:700; margin-bottom:.65rem; }
-    .st-key-search-shortcuts [data-testid="stLinkButton"] a {
-      align-items:center; background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:16px;
-      color:var(--ink) !important; display:flex; font-size:13px; font-weight:650; justify-content:center;
-      min-height:62px; padding:8px 6px; text-align:center; transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+    .st-key-search-shortcuts .shortcut-icon-wrap { display:flex; justify-content:center; }
+    .st-key-search-shortcuts .shortcut-icon-link {
+      align-items:center; background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:19px;
+      box-shadow:0 5px 16px rgba(33,58,99,.07); display:flex; height:76px; justify-content:center;
+      transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; width:76px;
     }
-    .st-key-search-shortcuts [data-testid="stLinkButton"] a:hover { border-color:__COR_AZUL__; box-shadow:0 6px 16px rgba(33,58,99,.08); transform:translateY(-2px); }
+    .st-key-search-shortcuts .shortcut-icon-link:hover { border-color:__COR_AZUL__; box-shadow:0 8px 20px rgba(33,58,99,.13); transform:translateY(-2px); }
+    .st-key-search-shortcuts .shortcut-icon-link img { height:42px; object-fit:contain; width:42px; }
     div[data-testid="stForm"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
       box-shadow:0 12px 36px rgba(33,58,99,.09); margin:0 auto; max-width:900px;
@@ -1936,20 +1938,23 @@ elif secao_app == "Nova aba":
 if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
     with st.container(key="search-shortcuts"):
         st.markdown(f"#### {texto_ui('shortcuts_title')}")
-        nomes_atalhos = {
-            "Português": ["🔎 Google", "▶️ YouTube", "📚 Wikipédia", "📍 Maps", "✉️ Gmail"],
-            "English": ["🔎 Google", "▶️ YouTube", "📚 Wikipedia", "📍 Maps", "✉️ Gmail"],
-            "Español": ["🔎 Google", "▶️ YouTube", "📚 Wikipedia", "📍 Maps", "✉️ Gmail"],
-        }[st.session_state.idioma_visual]
-        destinos_atalhos = [
-            "https://www.google.com/", "https://www.youtube.com/",
-            "https://pt.wikipedia.org/" if st.session_state.idioma_visual == "Português" else "https://www.wikipedia.org/",
-            "https://maps.google.com/", "https://mail.google.com/",
+        idioma = st.session_state.idioma_visual
+        nome_wikipedia = "Wikipédia" if idioma == "Português" else "Wikipedia"
+        dominio_wikipedia = "pt.wikipedia.org" if idioma == "Português" else "www.wikipedia.org"
+        atalhos = [
+            ("Google", "https://www.google.com/", "www.google.com"),
+            ("YouTube", "https://www.youtube.com/", "www.youtube.com"),
+            (nome_wikipedia, f"https://{dominio_wikipedia}/", dominio_wikipedia),
+            ("Maps", "https://maps.google.com/", "maps.google.com"),
+            ("Gmail", "https://mail.google.com/", "mail.google.com"),
         ]
-        colunas_atalhos = st.columns(len(nomes_atalhos), gap="small")
-        for coluna, nome_atalho, destino_atalho in zip(colunas_atalhos, nomes_atalhos, destinos_atalhos):
+        colunas_atalhos = st.columns(len(atalhos), gap="small")
+        for coluna, (nome_atalho, destino_atalho, dominio_atalho) in zip(colunas_atalhos, atalhos):
             with coluna:
-                st.link_button(nome_atalho, destino_atalho, use_container_width=True)
+                st.markdown(
+                    f'<div class="shortcut-icon-wrap"><a class="shortcut-icon-link" href="{escape(destino_atalho, quote=True)}" target="_blank" rel="noopener noreferrer" aria-label="{escape(nome_atalho, quote=True)}" title="{escape(nome_atalho, quote=True)}"><img src="https://www.google.com/s2/favicons?domain={escape(dominio_atalho, quote=True)}&amp;sz=96" alt="" loading="lazy"></a></div>',
+                    unsafe_allow_html=True,
+                )
 
 if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
     pesquisas_recentes = st.session_state.historico_pesquisas[:4]
