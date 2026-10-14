@@ -19,6 +19,8 @@
       const message = document.getElementById("message");
       let offlineText = "No internet connection. Check your network and try again when it returns.";
       let viewportConnected = false;
+      let suggestionsObserver = null;
+      let latestSuggestionArgs = {};
       function setFrameHeight(height) {
         window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:setFrameHeight",height}, "*");
       }
@@ -68,6 +70,40 @@
           }
         } catch (_) { /* The app remains usable if the host disallows parent access. */ }
       }
+      function attachLocalSearchSuggestions(args) {
+        try {
+          latestSuggestionArgs = args || latestSuggestionArgs;
+          const parentDoc = window.parent.document;
+          const main = parentDoc.querySelector('[data-testid="stMain"]');
+          if (!main) return;
+          let list = parentDoc.getElementById("knowix-search-suggestions");
+          if (!list) {
+            list = parentDoc.createElement("datalist");
+            list.id = "knowix-search-suggestions";
+            main.appendChild(list);
+          }
+          list.setAttribute("aria-label", args.rotulo_sugestoes || "Search suggestions");
+          const suggestions = Array.isArray(args.sugestoes_busca) ? args.sugestoes_busca : [];
+          list.replaceChildren(...[...new Set(suggestions.map((item) => String(item || "").trim()).filter(Boolean))].slice(0, 24).map((value) => {
+            const option = parentDoc.createElement("option");
+            option.value = value;
+            return option;
+          }));
+          const inputs = main.querySelectorAll('div.st-key-search-action-row input, div.st-key-formulario_nova_aba input');
+          inputs.forEach((input) => {
+            input.setAttribute("list", list.id);
+            input.setAttribute("aria-autocomplete", "list");
+          });
+          if (!inputs.length && !suggestionsObserver) {
+            suggestionsObserver = new parentDoc.defaultView.MutationObserver((records) => {
+              const addedInput = records.some((record) => [...record.addedNodes].some((node) => node.nodeType === 1
+                && (node.matches?.("input") || node.querySelector?.("input"))));
+              if (addedInput) attachLocalSearchSuggestions(latestSuggestionArgs);
+            });
+            suggestionsObserver.observe(main, {childList:true, subtree:true});
+          }
+        } catch (_) { /* Native browser autocomplete remains available. */ }
+      }
       window.addEventListener("online", update);
       window.addEventListener("offline", update);
       window.addEventListener("message", (event) => {
@@ -75,6 +111,7 @@
         const args = event.data.args || {};
         if (typeof args.mensagem_offline === "string") offlineText = args.mensagem_offline;
         connectAccessibleViewport(args);
+        attachLocalSearchSuggestions(args);
         update();
       });
       window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:componentReady",apiVersion:1}, "*");
