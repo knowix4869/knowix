@@ -199,6 +199,14 @@ estilo = (
       min-height:46px; padding:0 14px; text-align:left; transition:transform .16s ease,border-color .16s ease;
     }
     .st-key-search-history [data-testid="stButton"] button:hover { border-color:__COR_AZUL__; color:__COR_AZUL__ !important; transform:translateY(-1px); }
+    .st-key-search-shortcuts { margin:1.15rem auto 0; max-width:820px; }
+    .st-key-search-shortcuts h4 { color:var(--ink); font-size:15px; font-weight:700; margin-bottom:.65rem; }
+    .st-key-search-shortcuts [data-testid="stLinkButton"] a {
+      align-items:center; background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:16px;
+      color:var(--ink) !important; display:flex; font-size:13px; font-weight:650; justify-content:center;
+      min-height:62px; padding:8px 6px; text-align:center; transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+    }
+    .st-key-search-shortcuts [data-testid="stLinkButton"] a:hover { border-color:__COR_AZUL__; box-shadow:0 6px 16px rgba(33,58,99,.08); transform:translateY(-2px); }
     div[data-testid="stForm"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
       box-shadow:0 12px 36px rgba(33,58,99,.09); margin:0 auto; max-width:900px;
@@ -357,7 +365,7 @@ TRADUCOES_UI = {
         "open_source": "Abrir esta fonte fora do Knowix (opcional)", "source_page": "Fonte da web",
         "translation_wait": "Traduzindo a resposta e as fontes...", "translation_error": "O serviço de tradução não respondeu desta vez; parte do conteúdo pode continuar em português.",
         "channel": "Canal", "views": "Visualizações",
-        "recent_home": "Pesquisas recentes", "recent_home_empty": "Suas pesquisas recentes aparecerão aqui depois da primeira busca.",
+        "shortcuts_title": "Atalhos", "recent_home": "Pesquisas recentes", "recent_home_empty": "Suas pesquisas recentes aparecerão aqui depois da primeira busca.",
         "published": "Publicado", "consulted": "Consultado em",
         "temporary_search_error": "A pesquisa está temporariamente indisponível. Tente novamente em instantes.",
         "no_results_detail": "A pesquisa foi concluída, mas nenhuma página correspondente foi encontrada.",
@@ -440,7 +448,7 @@ TRADUCOES_UI = {
         "open_source": "Open this source outside Knowix (optional)", "source_page": "Web source",
         "translation_wait": "Translating the answer and sources...", "translation_error": "The translation service did not respond this time; some content may remain in Portuguese.",
         "channel": "Channel", "views": "Views",
-        "recent_home": "Recent searches", "recent_home_empty": "Your recent searches will appear here after your first search.",
+        "shortcuts_title": "Shortcuts", "recent_home": "Recent searches", "recent_home_empty": "Your recent searches will appear here after your first search.",
         "published": "Published", "consulted": "Consulted",
         "temporary_search_error": "Search is temporarily unavailable. Please try again shortly.",
         "no_results_detail": "The search completed, but no matching pages were found.",
@@ -523,7 +531,7 @@ TRADUCOES_UI = {
         "open_source": "Abrir esta fuente fuera de Knowix (opcional)", "source_page": "Fuente web",
         "translation_wait": "Traduciendo la respuesta y las fuentes...", "translation_error": "El servicio de traducción no respondió esta vez; parte del contenido puede seguir en portugués.",
         "channel": "Canal", "views": "Visualizaciones",
-        "recent_home": "Búsquedas recientes", "recent_home_empty": "Tus búsquedas recientes aparecerán aquí después de la primera búsqueda.",
+        "shortcuts_title": "Accesos directos", "recent_home": "Búsquedas recientes", "recent_home_empty": "Tus búsquedas recientes aparecerán aquí después de la primera búsqueda.",
         "published": "Publicado", "consulted": "Consultado",
         "temporary_search_error": "La búsqueda no está disponible temporalmente. Inténtalo de nuevo en unos instantes.",
         "no_results_detail": "La búsqueda terminó, pero no se encontraron páginas coincidentes.",
@@ -1925,6 +1933,24 @@ elif secao_app == "Nova aba":
             st.caption(texto_ui("deep_cost_note"))
         elif not chave_tavily_configurada:
             st.caption(texto_ui("deep_needs_key"))
+if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
+    with st.container(key="search-shortcuts"):
+        st.markdown(f"#### {texto_ui('shortcuts_title')}")
+        nomes_atalhos = {
+            "Português": ["🔎 Google", "▶️ YouTube", "📚 Wikipédia", "📍 Maps", "✉️ Gmail"],
+            "English": ["🔎 Google", "▶️ YouTube", "📚 Wikipedia", "📍 Maps", "✉️ Gmail"],
+            "Español": ["🔎 Google", "▶️ YouTube", "📚 Wikipedia", "📍 Maps", "✉️ Gmail"],
+        }[st.session_state.idioma_visual]
+        destinos_atalhos = [
+            "https://www.google.com/", "https://www.youtube.com/",
+            "https://pt.wikipedia.org/" if st.session_state.idioma_visual == "Português" else "https://www.wikipedia.org/",
+            "https://maps.google.com/", "https://mail.google.com/",
+        ]
+        colunas_atalhos = st.columns(len(nomes_atalhos), gap="small")
+        for coluna, nome_atalho, destino_atalho in zip(colunas_atalhos, nomes_atalhos, destinos_atalhos):
+            with coluna:
+                st.link_button(nome_atalho, destino_atalho, use_container_width=True)
+
 if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
     pesquisas_recentes = st.session_state.historico_pesquisas[:4]
     if pesquisas_recentes:
