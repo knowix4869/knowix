@@ -86,9 +86,11 @@
           streamlit.height();
           streamlit.value({ transcript: response.transcript, id: response.id });
         } else if (response.type === "error") {
-          showError(response.error === "permission" ? "permission" : "error");
+          const tipo = ["permission", "unavailable", "network", "no_speech", "busy"].includes(response.error)
+            ? response.error : "error";
+          showError(tipo);
         } else if (response.type === "stopped") {
-          status.textContent = "";
+          status.textContent = labels.canceled || "";
           updateListening(false);
         }
       }
@@ -110,7 +112,11 @@
           streamlit.value({ transcript, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` });
         };
         recognition.onerror = (event) => {
-          showError(event.error === "not-allowed" || event.error === "service-not-allowed" ? "permission" : "error");
+          const erros = {
+            "not-allowed": "permission", "service-not-allowed": "permission",
+            "no-speech": "no_speech", network: "network", aborted: "canceled",
+          };
+          showError(erros[event.error] || "error");
         };
         recognition.onend = () => updateListening(false);
         try { recognition.start(); } catch (_) { showError("error"); }
@@ -120,7 +126,8 @@
         status.textContent = "";
         if (listening) {
           if (androidBridge) androidBridge.postMessage(JSON.stringify({ type: "cancel" }));
-          else if (recognition) recognition.stop();
+          else if (recognition) recognition.abort();
+          status.textContent = labels.canceled || "";
           updateListening(false);
           return;
         }
