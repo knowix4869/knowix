@@ -290,6 +290,16 @@ estilo = (
       .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stTextInput"] input { font-size:16px; padding:0 10px; }
       .st-key-search-action-row .st-key-formulario_pesquisa [data-testid="stFormSubmitButton"] button { font-size:13px; padding:0 8px; }
       .st-key-search-mode [data-testid="stRadio"] > div { justify-content:center; }
+      .st-key-search-shortcuts [data-testid="stHorizontalBlock"] {
+        flex-direction:row !important; flex-wrap:nowrap !important; gap:4px !important;
+      }
+      .st-key-search-shortcuts [data-testid="column"] {
+        flex:1 1 0% !important; min-width:0 !important; width:20% !important;
+      }
+      .st-key-search-shortcuts .shortcut-icon-link {
+        border-radius:15px; height:auto; max-width:58px; width:100%; aspect-ratio:1;
+      }
+      .st-key-search-shortcuts .shortcut-icon-link img { height:34px; width:34px; }
       .st-key-search-history { margin-top:1.65rem; }
       .st-key-search-history [data-testid="stHorizontalBlock"] { gap:8px; }
       [data-testid="stVerticalBlockBorderWrapper"] { border-radius:16px; }
