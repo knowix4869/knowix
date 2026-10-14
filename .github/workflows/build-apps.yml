@@ -1,15 +1,12 @@
 name: Build Knowix apps
-
 on:
   workflow_dispatch:
   push:
     paths:
       - "Knowix-Apps.zip"
       - ".github/workflows/build-apps.yml"
-
 permissions:
   contents: read
-
 jobs:
   windows:
     name: Build Windows app
@@ -25,13 +22,12 @@ jobs:
         run: python -m pip install -r Knowix-Apps/windows/requirements-build.txt
       - name: Build Knowix.exe
         working-directory: Knowix-Apps/windows
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name Knowix knowix_desktop.py
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --icon=knowix.ico --name Knowix knowix_desktop.py
       - uses: actions/upload-artifact@v6
         with:
           name: Knowix-Windows
           path: Knowix-Apps/windows/dist/Knowix.exe
           if-no-files-found: error
-
   android:
     name: Build Android APK
     runs-on: ubuntu-latest
