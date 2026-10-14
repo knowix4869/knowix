@@ -46,6 +46,10 @@ componente_dados_locais = components.declare_component(
     "knowix_local_storage",
     path=Path(__file__).parent / "knowix_storage",
 )
+componente_status_rede = components.declare_component(
+    "knowix_network_status",
+    path=Path(__file__).parent / "knowix_network",
+)
 componente_callback_conta = components.declare_component(
     "knowix_account_callback",
     path=Path(__file__).parent / "knowix_account_callback",
@@ -141,9 +145,11 @@ estilo = (
     div[data-testid="stButton"] button {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:12px;
       color:__COR_TEXTO_BOTAO__ !important; font-size:15px; font-weight:650;
-      min-height:48px; white-space:normal;
+      min-height:48px; touch-action:manipulation; transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease,color .14s ease; white-space:normal;
     }
-    div[data-testid="stButton"] button:hover { border-color:__COR_AZUL__; color:__COR_AZUL__ !important; }
+    div[data-testid="stButton"] button:hover { border-color:__COR_AZUL__; box-shadow:0 4px 12px rgba(33,58,99,.08); color:__COR_AZUL__ !important; transform:translateY(-1px); }
+    div[data-testid="stButton"] button:active { transform:scale(.985); }
+    div[data-testid="stButton"] button:focus-visible, div[data-testid="stLinkButton"] a:focus-visible { outline:3px solid #246bfe66; outline-offset:2px; }
     .st-key-app-topbar { margin:0 auto 1rem; max-width:900px; }
     .st-key-app-topbar [data-testid="stHorizontalBlock"] { align-items:center; justify-content:space-between; gap:12px; }
     .st-key-app-topbar .brand-row { align-items:center; display:flex; flex:0 0 auto; gap:9px; justify-content:flex-start; margin:0; }
@@ -207,16 +213,22 @@ estilo = (
     .st-key-search-shortcuts { margin:1.15rem auto 0; max-width:820px; }
     .st-key-search-shortcuts h4 { color:var(--ink); font-size:15px; font-weight:700; margin-bottom:.65rem; }
     .st-key-search-shortcuts .shortcut-grid {
-      display:grid; gap:10px; grid-template-columns:repeat(5,minmax(0,1fr)); justify-items:center;
-      margin:0 auto; max-width:460px; width:100%;
+      align-items:center; display:flex; flex-wrap:nowrap; gap:clamp(5px,2vw,10px);
+      justify-content:center; margin:0 auto; max-width:460px; width:100%;
     }
     .st-key-search-shortcuts .shortcut-icon-link {
       align-items:center; aspect-ratio:1; background:__COR_CARTAO__; border:1px solid __COR_BORDA__;
-      border-radius:19px; box-shadow:0 5px 16px rgba(33,58,99,.07); display:flex; height:auto;
-      justify-content:center; max-width:76px; transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; width:100%;
+      border-radius:18px; box-shadow:0 4px 13px rgba(33,58,99,.07); display:flex; flex:1 1 0;
+      justify-content:center; max-width:76px; min-height:44px; min-width:40px;
+      touch-action:manipulation; transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; width:100%;
     }
-    .st-key-search-shortcuts .shortcut-icon-link:hover { border-color:__COR_AZUL__; box-shadow:0 8px 20px rgba(33,58,99,.13); transform:translateY(-2px); }
-    .st-key-search-shortcuts .shortcut-icon-link img { height:clamp(30px,9vw,42px); object-fit:contain; width:clamp(30px,9vw,42px); }
+    .st-key-search-shortcuts .shortcut-icon-link:hover { border-color:__COR_AZUL__; box-shadow:0 7px 18px rgba(33,58,99,.12); transform:translateY(-2px); }
+    .st-key-search-shortcuts .shortcut-icon-link:focus-visible { outline:3px solid #246bfe77; outline-offset:3px; }
+    .st-key-search-shortcuts .shortcut-icon { display:block; height:clamp(28px,8vw,38px); width:clamp(28px,8vw,38px); }
+    .st-key-search-shortcuts .shortcut-icon svg { display:block; height:100%; width:100%; }
+    [data-testid="stSpinner"] { border-radius:12px; font-weight:600; padding:8px 10px; }
+    [data-testid="stVerticalBlockBorderWrapper"] { transition:border-color .16s ease,box-shadow .16s ease; }
+    [data-testid="stVerticalBlockBorderWrapper"]:hover { box-shadow:0 12px 30px rgba(33,58,99,.09); }
     div[data-testid="stForm"] {
       background:__COR_CARTAO__; border:1px solid __COR_BORDA__; border-radius:22px;
       box-shadow:0 12px 36px rgba(33,58,99,.09); margin:0 auto; max-width:900px;
@@ -260,6 +272,7 @@ estilo = (
       color:var(--blue) !important; display:block; font-size:20px; font-weight:500;
       line-height:1.35; margin:0 0 4px; text-decoration:none !important;
     }
+    .web-result-title { transition:color .14s ease; }
     .web-result-title:hover { text-decoration:underline !important; }
     .web-result-snippet { color:var(--ink); font-size:14px; line-height:1.55; }
     .web-result-dates { color:var(--muted); font-size:12px; line-height:1.5; margin-top:6px; }
@@ -377,8 +390,9 @@ TRADUCOES_UI = {
         "channel": "Canal", "views": "Visualizações",
         "shortcuts_title": "Atalhos", "recent_home": "Pesquisas recentes", "recent_home_empty": "Suas pesquisas recentes aparecerão aqui depois da primeira busca.",
         "published": "Publicado", "consulted": "Consultado em",
-        "temporary_search_error": "A pesquisa está temporariamente indisponível. Tente novamente em instantes.",
-        "no_results_detail": "A pesquisa foi concluída, mas nenhuma página correspondente foi encontrada.",
+        "temporary_search_error": "Não foi possível concluir a pesquisa. Confira a conexão com a internet e tente novamente em instantes.",
+        "no_results_detail": "A pesquisa foi concluída, mas não encontrei páginas correspondentes. Tente outra palavra ou ajuste os termos.",
+        "offline_notice": "Sem conexão com a internet. Confira sua rede; quando ela voltar, tente novamente.",
         "export_title": "Exportar pesquisa", "export_md": "Baixar texto", "export_docx": "Baixar documento", "export_pdf": "Baixar PDF",
         "filter_label": "Filtrar resultados", "filter_all": "Todos", "filter_sites": "Sites", "filter_news": "Notícias", "filter_articles": "Artigos", "filter_videos": "Vídeos", "filter_images": "Imagens", "filter_documents": "Documentos",
         "comparison_heading": "Comparação das opções encontradas",
@@ -460,8 +474,9 @@ TRADUCOES_UI = {
         "channel": "Channel", "views": "Views",
         "shortcuts_title": "Shortcuts", "recent_home": "Recent searches", "recent_home_empty": "Your recent searches will appear here after your first search.",
         "published": "Published", "consulted": "Consulted",
-        "temporary_search_error": "Search is temporarily unavailable. Please try again shortly.",
-        "no_results_detail": "The search completed, but no matching pages were found.",
+        "temporary_search_error": "The search could not be completed. Check your internet connection and try again shortly.",
+        "no_results_detail": "The search finished, but no matching pages were found. Try different or more specific terms.",
+        "offline_notice": "No internet connection. Check your network and try again when it returns.",
         "export_title": "Export search", "export_md": "Download text", "export_docx": "Download document", "export_pdf": "Download PDF",
         "filter_label": "Filter results", "filter_all": "All", "filter_sites": "Websites", "filter_news": "News", "filter_articles": "Articles", "filter_videos": "Videos", "filter_images": "Images", "filter_documents": "Documents",
         "comparison_heading": "Comparison of the options found",
@@ -543,8 +558,9 @@ TRADUCOES_UI = {
         "channel": "Canal", "views": "Visualizaciones",
         "shortcuts_title": "Accesos directos", "recent_home": "Búsquedas recientes", "recent_home_empty": "Tus búsquedas recientes aparecerán aquí después de la primera búsqueda.",
         "published": "Publicado", "consulted": "Consultado",
-        "temporary_search_error": "La búsqueda no está disponible temporalmente. Inténtalo de nuevo en unos instantes.",
-        "no_results_detail": "La búsqueda terminó, pero no se encontraron páginas coincidentes.",
+        "temporary_search_error": "No se pudo completar la búsqueda. Revisa tu conexión a internet e inténtalo de nuevo en unos instantes.",
+        "no_results_detail": "La búsqueda terminó, pero no encontré páginas coincidentes. Prueba otras palabras o términos más específicos.",
+        "offline_notice": "Sin conexión a internet. Revisa tu red y vuelve a intentarlo cuando se restablezca.",
         "export_title": "Exportar búsqueda", "export_md": "Descargar texto", "export_docx": "Descargar documento", "export_pdf": "Descargar PDF",
         "filter_label": "Filtrar resultados", "filter_all": "Todos", "filter_sites": "Sitios", "filter_news": "Noticias", "filter_articles": "Artículos", "filter_videos": "Videos", "filter_images": "Imágenes", "filter_documents": "Documentos",
         "comparison_heading": "Comparación de las opciones encontradas",
@@ -1396,6 +1412,8 @@ with st.container(key="app-topbar", horizontal=True, horizontal_alignment="distr
             width=124,
             on_change=sincronizar_idioma_selecionado,
         )
+componente_status_rede(default=None, key="knowix_connection_state", height=1,
+                        mensagem_offline=texto_ui("offline_notice"))
 if st.session_state.erro_dados_locais:
     st.warning(texto_ui("storage_error"))
 
@@ -1967,13 +1985,21 @@ if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
             ("Maps", "https://maps.google.com/", "maps.google.com"),
             ("Gmail", "https://mail.google.com/", "mail.google.com"),
         ]
+        icones_atalhos = {
+            "www.google.com": '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.7-.4-4H24v7.6h11a9.4 9.4 0 0 1-4.1 6.2v5h6.7c3.9-3.6 6-8.8 6-14.8Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.7-5c-1.8 1.2-4 1.9-6.8 1.9-5.2 0-9.6-3.5-11.2-8.2H5.9v5.2A20 20 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.8 27.9a12 12 0 0 1 0-7.8v-5.2H5.9a20 20 0 0 0 0 18.2l6.9-5.2Z"/><path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.9-5.9C34.1 5.9 29.5 4 24 4A20 20 0 0 0 5.9 14.9l6.9 5.2C14.4 15.5 18.8 12 24 12Z"/></svg>',
+            "www.youtube.com": '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="40" height="28" rx="9" fill="#FF0033"/><path d="m20 17 13 7-13 7V17Z" fill="#fff"/></svg>',
+            "pt.wikipedia.org": '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#f2f3f5"/><text x="24" y="34" fill="#222" font-family="Georgia,serif" font-size="29" font-weight="700" text-anchor="middle">W</text></svg>',
+            "www.wikipedia.org": '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#f2f3f5"/><text x="24" y="34" fill="#222" font-family="Georgia,serif" font-size="29" font-weight="700" text-anchor="middle">W</text></svg>',
+            "maps.google.com": '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#34A853" d="M24 44 8 22l9-12 8 3 10-3 6 12-17 22Z"/><path fill="#4285F4" d="m17 10 8 3v31L8 22l9-12Z"/><path fill="#FBBC05" d="m25 13 10-3 6 12-16 22V13Z"/><path fill="#EA4335" d="M17 10 24 4l11 6-10 3-8-3Z"/><circle cx="24" cy="20" r="5" fill="#fff"/><circle cx="24" cy="20" r="2.2" fill="#4285F4"/></svg>',
+            "mail.google.com": '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="10" width="38" height="28" rx="5" fill="#fff" stroke="#dadce0" stroke-width="2"/><path d="m7 14 17 13 17-13" fill="none" stroke="#EA4335" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14v19" stroke="#4285F4" stroke-width="5" stroke-linecap="round"/><path d="M41 14v19" stroke="#34A853" stroke-width="5" stroke-linecap="round"/><path d="M7 34h11" stroke="#FBBC05" stroke-width="5" stroke-linecap="round"/></svg>',
+        }
         cards_atalhos = []
         for nome_atalho, destino_atalho, dominio_atalho in atalhos:
             rotulo = escape(nome_atalho, quote=True)
             destino = escape(destino_atalho, quote=True)
-            dominio = escape(dominio_atalho, quote=True)
+            icone = icones_atalhos.get(dominio_atalho, "")
             cards_atalhos.append(
-                f'<a class="shortcut-icon-link" href="{destino}" target="_blank" rel="noopener noreferrer" aria-label="{rotulo}" title="{rotulo}"><img src="https://www.google.com/s2/favicons?domain={dominio}&amp;sz=96" alt="" loading="lazy"></a>'
+                f'<a class="shortcut-icon-link" href="{destino}" target="_blank" rel="noopener noreferrer" aria-label="{rotulo}" title="{rotulo}"><span class="shortcut-icon">{icone}</span></a>'
             )
         st.markdown(
             f'<div class="shortcut-grid">{"".join(cards_atalhos)}</div>',
