@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * { box-sizing:border-box; }
+      html,body { margin:0; padding:0; background:transparent; color:#513c0a; font:14px Arial,sans-serif; }
+      #notice { align-items:center; background:#fff4d6; border:1px solid #f0d58a; border-radius:12px; display:flex; gap:9px; line-height:1.4; padding:10px 14px; }
+      #notice[hidden] { display:none; }
+      .icon { align-items:center; background:#f4c84b; border-radius:50%; color:#4f3900; display:flex; flex:0 0 22px; font-weight:800; height:22px; justify-content:center; width:22px; }
+      @media (prefers-color-scheme:dark) { html,body { color:#ffe8a8; } #notice { background:#302817; border-color:#65532b; } .icon { background:#d9ad3e; color:#251b05; } }
+    </style>
+  </head>
+  <body>
+    <div id="notice" role="status" aria-live="polite" hidden><span class="icon" aria-hidden="true">!</span><span id="message"></span></div>
+    <script>
+      const notice = document.getElementById("notice");
+      const message = document.getElementById("message");
+      let offlineText = "No internet connection. Check your network and try again when it returns.";
+      function setFrameHeight(height) {
+        window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:setFrameHeight",height}, "*");
+      }
+      function update() {
+        const offline = !navigator.onLine;
+        notice.hidden = !offline;
+        message.textContent = offlineText;
+        setFrameHeight(offline ? Math.ceil(notice.getBoundingClientRect().height + 4) : 1);
+      }
+      window.addEventListener("online", update);
+      window.addEventListener("offline", update);
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+        const args = event.data.args || {};
+        if (typeof args.mensagem_offline === "string") offlineText = args.mensagem_offline;
+        update();
+      });
+      window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:componentReady",apiVersion:1}, "*");
+      update();
+    </script>
+  </body>
+</html>
