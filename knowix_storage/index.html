@@ -8,6 +8,17 @@
   <body>
     <script>
       const STORAGE_KEY = "knowix.browser-data.v1";
+      const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      let themePreference = "Sistema";
+      const currentSystemTheme = () => systemThemeQuery.matches ? "dark" : "light";
+      const effectiveTheme = () => themePreference === "Escuro"
+        ? "dark" : themePreference === "Claro" ? "light" : currentSystemTheme();
+      const notifyNativeTheme = () => {
+        try {
+          const topWindow = window.parent && window.parent.parent ? window.parent.parent : window.parent;
+          topWindow.postMessage({ type: "knowix-theme", theme: effectiveTheme() }, "*");
+        } catch (_) {}
+      };
       const streamlit = {
         ready() {
           window.parent.postMessage({
@@ -33,16 +44,27 @@
         }
       };
 
+      systemThemeQuery.addEventListener("change", () => {
+        const systemTheme = currentSystemTheme();
+        notifyNativeTheme();
+        streamlit.value({ kind: "system-theme", systemTheme });
+      });
+
       window.addEventListener("message", (event) => {
         if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
         const args = event.data.args || {};
         if (args.action === "load") {
           try {
             const raw = window.localStorage.getItem(STORAGE_KEY);
+            const data = raw === null ? null : JSON.parse(raw);
+            themePreference = data?.preferences?.theme || "Sistema";
+            const systemTheme = currentSystemTheme();
+            notifyNativeTheme();
             streamlit.value({
               kind: "loaded",
               exists: raw !== null,
-              data: raw === null ? null : JSON.parse(raw)
+              data,
+              systemTheme
             });
           } catch (_) {
             streamlit.value({ kind: "error", reason: "read" });
@@ -50,6 +72,8 @@
         } else if (args.action === "save") {
           try {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(args.data));
+            themePreference = args.data?.preferences?.theme || "Sistema";
+            notifyNativeTheme();
             streamlit.value({ kind: "saved", revision: args.revision });
           } catch (_) {
             streamlit.value({ kind: "error", reason: "write" });
