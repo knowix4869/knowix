@@ -29,7 +29,13 @@ from knowix_search import (
     classificar_fonte, detectar_comparacao, filtrar_fontes,
     filtros_disponiveis, normalizar_url_http,
 )
-from knowix_vision import ErroVisaoKnowix, analisar_imagem
+from knowix_vision import (
+    ErroVisaoKnowix, analisar_imagem, obter_chave_gemini, obter_modelo_gemini,
+)
+from knowix_age_verification import (
+    ErroVerificacaoIdade, criar_sessao, consultar_sessao,
+    obter_configuracao, configuracao_disponivel, resultado_aprovado,
+)
 
 
 st.set_page_config(
@@ -356,7 +362,8 @@ TRADUCOES_UI = {
         "search_hero_title": "O que você quer descobrir?",
         "search_hero_caption": "Pesquise respostas e fontes para explorar.",
         "search_button": "Pesquisar", "new_search_title": "Abra uma nova pesquisa",
-        "invalid_search": "Digite uma busca com pelo menos uma letra ou número.", "too_long_search": "A busca pode ter no máximo 1.000 caracteres.",
+        "invalid_search": "Digite uma busca com pelo menos uma letra ou número.",
+        "too_long_search": "A busca pode ter no máximo 1.000 caracteres.",
         "open_url": "Abrir site", "url_detected": "Endereço reconhecido. Você pode abrir o site diretamente.",
         "suggestions_label": "Sugestões de pesquisa, baseadas no histórico deste navegador e em temas populares.",
         "new_search_caption": "Inicie outra busca sem apagar o histórico desta sessão.",
@@ -410,6 +417,7 @@ TRADUCOES_UI = {
         "published": "Publicado", "consulted": "Consultado em",
         "temporary_search_error": "Não foi possível concluir a pesquisa. Confira a conexão com a internet e tente novamente em instantes.",
         "no_results_detail": "A pesquisa foi concluída, mas não encontrei páginas correspondentes. Tente outra palavra ou ajuste os termos.",
+        "retry_search": "Tentar novamente", "did_you_mean": "Você quis dizer",
         "offline_notice": "Sem conexão com a internet. Confira sua rede; quando ela voltar, tente novamente.",
         "export_title": "Exportar pesquisa", "export_md": "Baixar texto", "export_docx": "Baixar documento", "export_pdf": "Baixar PDF",
         "filter_label": "Filtrar resultados", "filter_all": "Todos", "filter_sites": "Sites", "filter_news": "Notícias", "filter_articles": "Artigos", "filter_videos": "Vídeos", "filter_images": "Imagens", "filter_documents": "Documentos",
@@ -440,7 +448,7 @@ TRADUCOES_UI = {
         "image_privacy": "A análise está pausada. Nenhuma foto será enviada a serviços externos até a confirmação adequada de acesso exclusivo para maiores de 18 anos.",
         "image_analyze": "Análise temporariamente indisponível", "image_missing_key": "A análise de imagem continua desativada até que o acesso exclusivo para maiores de 18 anos seja confirmado adequadamente e as condições do provedor sejam atendidas.",
         "image_analysis": "Análise visual — resposta de IA", "image_web_search": "Pesquisar na web sobre isso",
-        "image_error": "Não foi possível analisar a imagem.", "image_rate_limit": "Você atingiu o limite temporário de análises de imagem. Tente novamente em uma hora.",
+        "image_error": "Não foi possível analisar a imagem.", "image_rate_limit": "Você atingiu o limite temporário de análises de imagem. Tente novamente em uma hora.", "image_active_privacy": "A foto será enviada ao Google Gemini para análise somente quando você tocar em analisar. Não envie imagens sensíveis.",
     },
     "English": {
         "section_Pesquisar": "Search", "section_Nova aba": "New tab", "section_Histórico": "History", "section_Favoritos": "Favorites", "section_Pastas": "Folders", "section_Projetos": "Projects",
@@ -498,6 +506,7 @@ TRADUCOES_UI = {
         "published": "Published", "consulted": "Consulted",
         "temporary_search_error": "The search could not be completed. Check your internet connection and try again shortly.",
         "no_results_detail": "The search finished, but no matching pages were found. Try different or more specific terms.",
+        "retry_search": "Try again", "did_you_mean": "Did you mean",
         "offline_notice": "No internet connection. Check your network and try again when it returns.",
         "export_title": "Export search", "export_md": "Download text", "export_docx": "Download document", "export_pdf": "Download PDF",
         "filter_label": "Filter results", "filter_all": "All", "filter_sites": "Websites", "filter_news": "News", "filter_articles": "Articles", "filter_videos": "Videos", "filter_images": "Images", "filter_documents": "Documents",
@@ -528,7 +537,7 @@ TRADUCOES_UI = {
         "image_privacy": "Image analysis is paused. No photo will be sent to external services until adults-only access is adequately assured.",
         "image_analyze": "Temporarily unavailable", "image_missing_key": "Image analysis remains disabled until adults-only access is adequately assured and provider requirements are met.",
         "image_analysis": "Visual analysis — AI response", "image_web_search": "Search the web about this",
-        "image_error": "The image could not be analyzed.", "image_rate_limit": "You reached the temporary image analysis limit. Try again in an hour.",
+        "image_error": "The image could not be analyzed.", "image_rate_limit": "You reached the temporary image analysis limit. Try again in an hour.", "image_active_privacy": "Your photo will be sent to Google Gemini for analysis only after you choose Analyze. Do not submit sensitive images.",
     },
     "Español": {
         "section_Pesquisar": "Buscar", "section_Nova aba": "Nueva pestaña", "section_Histórico": "Historial", "section_Favoritos": "Favoritos", "section_Pastas": "Carpetas", "section_Projetos": "Proyectos",
@@ -586,6 +595,7 @@ TRADUCOES_UI = {
         "published": "Publicado", "consulted": "Consultado",
         "temporary_search_error": "No se pudo completar la búsqueda. Revisa tu conexión a internet e inténtalo de nuevo en unos instantes.",
         "no_results_detail": "La búsqueda terminó, pero no encontré páginas coincidentes. Prueba otras palabras o términos más específicos.",
+        "retry_search": "Intentar de nuevo", "did_you_mean": "Quizás quisiste decir",
         "offline_notice": "Sin conexión a internet. Revisa tu red y vuelve a intentarlo cuando se restablezca.",
         "export_title": "Exportar búsqueda", "export_md": "Descargar texto", "export_docx": "Descargar documento", "export_pdf": "Descargar PDF",
         "filter_label": "Filtrar resultados", "filter_all": "Todos", "filter_sites": "Sitios", "filter_news": "Noticias", "filter_articles": "Artículos", "filter_videos": "Videos", "filter_images": "Imágenes", "filter_documents": "Documentos",
@@ -616,7 +626,7 @@ TRADUCOES_UI = {
         "image_privacy": "El análisis está pausado. No se enviará ninguna foto a servicios externos hasta asegurar adecuadamente el acceso exclusivo para mayores de 18 años.",
         "image_analyze": "Temporalmente no disponible", "image_missing_key": "El análisis de imágenes seguirá desactivado hasta asegurar adecuadamente el acceso exclusivo para mayores de 18 años y cumplir las condiciones del proveedor.",
         "image_analysis": "Análisis visual — respuesta de IA", "image_web_search": "Buscar en la web sobre esto",
-        "image_error": "No se pudo analizar la imagen.", "image_rate_limit": "Alcanzaste el límite temporal de análisis de imágenes. Vuelve a intentarlo en una hora.",
+        "image_error": "No se pudo analizar la imagen.", "image_rate_limit": "Alcanzaste el límite temporal de análisis de imágenes. Vuelve a intentarlo en una hora.", "image_active_privacy": "La foto se enviará a Google Gemini para su análisis solo cuando pulses Analizar. No envíes imágenes sensibles.",
     },
 }
 
@@ -669,6 +679,11 @@ IDIOMAS_PORTAO_ADULTO = {
         "minor": "Se você tem menos de 18 anos, não continue e feche esta página.",
         "verification": "Esta é uma autodeclaração, não uma verificação independente de idade. O Knowix não pede nem armazena sua data de nascimento.",
         "error": "Confirme que tem 18 anos ou mais para continuar.",
+        "provider_prompt": "Para continuar, confirme sua idade por um provedor externo. O Knowix recebe somente o resultado de maioridade; a verificação ocorre na página segura da Yoti e pode exigir uma selfie para estimativa de idade.",
+        "provider_privacy": "Ao iniciar, você será direcionado à Yoti, que processa as informações necessárias conforme a própria política de privacidade. O Knowix não recebe nem armazena a selfie, documento ou data de nascimento.",
+        "provider_button": "Iniciar verificação de idade (18+)", "provider_link": "Continuar na verificação segura da Yoti",
+        "provider_pending": "A verificação ainda está sendo processada. Retorne pela página da Yoti para concluir.",
+        "provider_denied": "A verificação não confirmou que você tem 18 anos ou mais.",
     },
     "English": {
         "title": "Access is restricted to adults aged 18 or older",
@@ -678,6 +693,11 @@ IDIOMAS_PORTAO_ADULTO = {
         "minor": "If you are under 18, do not continue. Close this page.",
         "verification": "This is a self-declaration, not independent age verification. Knowix does not ask for or store your date of birth.",
         "error": "Confirm that you are at least 18 to continue.",
+        "provider_prompt": "To continue, verify your age through an external provider. Knowix receives only the age threshold result; verification takes place on Yoti's secure page and may require a selfie for age estimation.",
+        "provider_privacy": "When you start, you will be redirected to Yoti, which processes the necessary information under its privacy policy. Knowix does not receive or store your selfie, document, or date of birth.",
+        "provider_button": "Start age verification (18+)", "provider_link": "Continue with secure Yoti verification",
+        "provider_pending": "Verification is still processing. Return from Yoti to finish.",
+        "provider_denied": "Verification did not confirm that you are 18 or older.",
     },
     "Español": {
         "title": "Acceso exclusivo para mayores de 18 años",
@@ -687,10 +707,78 @@ IDIOMAS_PORTAO_ADULTO = {
         "minor": "Si tienes menos de 18 años, no continúes y cierra esta página.",
         "verification": "Esta es una autodeclaración, no una verificación independiente de edad. Knowix no solicita ni almacena tu fecha de nacimiento.",
         "error": "Confirma que tienes 18 años o más para continuar.",
+        "provider_prompt": "Para continuar, verifica tu edad con un proveedor externo. Knowix recibe solo el resultado del umbral de edad; la verificación ocurre en la página segura de Yoti y puede requerir una selfie para estimar la edad.",
+        "provider_privacy": "Al iniciar, irás a Yoti, que procesa la información necesaria según su propia política de privacidad. Knowix no recibe ni almacena tu selfie, documento ni fecha de nacimiento.",
+        "provider_button": "Iniciar verificación de edad (18+)", "provider_link": "Continuar con la verificación segura de Yoti",
+        "provider_pending": "La verificación aún se está procesando. Regresa desde Yoti para terminar.",
+        "provider_denied": "La verificación no confirmó que tienes 18 años o más.",
     },
 }
 
 st.session_state.setdefault("knowix_adult_confirmed", False)
+st.session_state.setdefault("knowix_adult_verified", False)
+try:
+    configuracao_idade = obter_configuracao(st.secrets)
+except Exception:
+    configuracao_idade = obter_configuracao()
+verificacao_idade_ativa = configuracao_disponivel(configuracao_idade)
+
+# Yoti returns only a session ID to the browser. The Knowix server retrieves
+# the result directly; browser query parameters never prove age on their own.
+if verificacao_idade_ativa:
+    try:
+        retorno_idade = st.query_params.get("sessionId", "")
+    except Exception:
+        retorno_idade = ""
+    sessao_esperada = st.session_state.get("knowix_yoti_session_id", "")
+    if retorno_idade and sessao_esperada and retorno_idade == sessao_esperada:
+        try:
+            resultado_idade = consultar_sessao(configuracao_idade, sessao_esperada)
+            if resultado_aprovado(resultado_idade, sessao_esperada, configuracao_idade["sdk_id"]):
+                st.session_state.knowix_adult_verified = True
+                st.session_state.knowix_adult_confirmed = True
+                st.session_state.pop("knowix_age_result_message", None)
+                st.session_state.pop("knowix_yoti_session_id", None)
+                st.session_state.pop("knowix_yoti_launch_url", None)
+            else:
+                st.session_state.knowix_adult_verified = False
+                st.session_state.knowix_yoti_session_id = ""
+                st.session_state.knowix_yoti_launch_url = ""
+                status_idade = str(resultado_idade.get("status", "")).upper()
+                idioma_resultado = st.session_state.get("idioma_visual", "Português")
+                texto_resultado = IDIOMAS_PORTAO_ADULTO.get(idioma_resultado, IDIOMAS_PORTAO_ADULTO["Português"])
+                st.session_state.knowix_age_result_message = texto_resultado["provider_pending"] if status_idade in {"PENDING", "PROCESSING", "IN_PROGRESS"} else texto_resultado["provider_denied"]
+                if status_idade not in {"PENDING", "PROCESSING", "IN_PROGRESS"}:
+                    st.session_state.knowix_yoti_session_id = ""
+                    st.session_state.knowix_yoti_launch_url = ""
+        except ErroVerificacaoIdade as erro:
+            st.session_state.knowix_age_result_message = str(erro)
+        try:
+            st.query_params.clear()
+        except Exception:
+            pass
+
+if verificacao_idade_ativa and not st.session_state.knowix_adult_verified:
+    idioma_portao = st.session_state.get("idioma_visual", "Português")
+    textos_portao = IDIOMAS_PORTAO_ADULTO.get(idioma_portao, IDIOMAS_PORTAO_ADULTO["Português"])
+    st.title(textos_portao["title"])
+    st.write(textos_portao["provider_prompt"])
+    st.caption(textos_portao["provider_privacy"])
+    if st.session_state.get("knowix_age_result_message"):
+        st.warning(st.session_state.pop("knowix_age_result_message"))
+    if st.button(textos_portao["provider_button"], key="knowix_start_age_check", use_container_width=True):
+        if not st.session_state.get("knowix_yoti_launch_url"):
+            try:
+                yoti_session_id, yoti_url = criar_sessao(configuracao_idade)
+                st.session_state.knowix_yoti_session_id = yoti_session_id
+                st.session_state.knowix_yoti_launch_url = yoti_url
+            except ErroVerificacaoIdade as erro:
+                st.error(str(erro))
+    if st.session_state.get("knowix_yoti_launch_url"):
+        st.link_button(textos_portao["provider_link"], st.session_state.knowix_yoti_launch_url, use_container_width=True)
+    st.caption(textos_portao["minor"])
+    st.stop()
+
 if not st.session_state.knowix_adult_confirmed:
     idioma_portao = st.session_state.get("idioma_visual", "Português")
     textos_portao = IDIOMAS_PORTAO_ADULTO.get(idioma_portao, IDIOMAS_PORTAO_ADULTO["Português"])
@@ -827,6 +915,8 @@ def traduzir_resultado(dados):
         campos.append(resultado["video"].get("title", ""))
     for fonte in resultado["fontes"]:
         campos.extend([fonte.get("title", ""), fonte.get("content", "")])
+    if resultado.get("consulta_sugerida"):
+        campos.append(resultado["consulta_sugerida"])
     for imagem in resultado["imagens"]:
         campos.append(imagem.get("description", ""))
     campos.extend(resultado["avisos"])
@@ -841,6 +931,9 @@ def traduzir_resultado(dados):
     for fonte in resultado["fontes"]:
         fonte["title"], fonte["content"] = traducao[indice:indice + 2]
         indice += 2
+    if resultado.get("consulta_sugerida"):
+        resultado["consulta_sugerida"] = traducao[indice]
+        indice += 1
     for imagem in resultado["imagens"]:
         imagem["description"] = traducao[indice]
         indice += 1
@@ -1574,7 +1667,26 @@ def pesquisar_wikipedia(assunto):
         timeout=(3, 9),
     )
     resposta.raise_for_status()
-    return resposta.json().get("query", {}).get("pages", [])
+    dados = resposta.json()
+    sugestao = None
+    try:
+        parametros_sugestao = {
+            "action": "query", "list": "search", "srsearch": assunto,
+            "srinfo": "suggestion", "srprop": "", "srlimit": 1,
+            "format": "json", "formatversion": 2,
+        }
+        resposta_sugestao = requests.get(
+            url, params=parametros_sugestao,
+            headers={"User-Agent": "Knowix/2.0 (aplicativo de pesquisa)"}, timeout=(3, 5),
+        )
+        resposta_sugestao.raise_for_status()
+        sugestao = resposta_sugestao.json().get("query", {}).get("searchinfo", {}).get("suggestion")
+    except (requests.exceptions.RequestException, ValueError, TypeError):
+        pass
+    return {
+        "pages": dados.get("query", {}).get("pages", []),
+        "suggestion": str(sugestao).strip() if sugestao else None,
+    }
 
 
 def escolher_pagina_principal(paginas, assunto):
@@ -1674,6 +1786,16 @@ def preparar_busca_interna(assunto):
     st.session_state.secao_display = texto_ui("section_Pesquisar")
 
 
+def tentar_busca_novamente(consulta):
+    """Remove o resultado em cache da consulta antes de tentar de novo."""
+    termo = str(consulta or "").strip().casefold()
+    cache = st.session_state.get("cache_buscas", {})
+    for chave in list(cache):
+        if chave.partition(":")[2] == termo:
+            cache.pop(chave, None)
+    preparar_busca_interna(consulta)
+
+
 def preparar_pergunta_complementar(assunto_anterior):
     """Continua a pesquisa com contexto limitado e sempre exige uma nova busca de fontes."""
     pergunta = str(st.session_state.get("pergunta_complementar", "")).strip()[:500]
@@ -1741,6 +1863,7 @@ def buscar_resultados(assunto, chave_tavily, modo="rapida", progresso=None):
     falha_busca = False
     falha_timeout = False
     busca_concluida = False
+    sugestao_consulta = None
     consultado_em = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
     comparacao = detectar_comparacao(assunto)
     pesquisa_profunda = False
@@ -1809,8 +1932,10 @@ def buscar_resultados(assunto, chave_tavily, modo="rapida", progresso=None):
                 if not fontes:
                     resposta_direta = ""
                     resposta_gerada_por_ia = False
-            elif dados_web:
-                pagina = escolher_pagina_principal(dados_web, assunto)
+            elif dados_web.get("pages"):
+                paginas_wikipedia = dados_web["pages"]
+                sugestao_consulta = dados_web.get("suggestion")
+                pagina = escolher_pagina_principal(paginas_wikipedia, assunto)
                 resposta_direta = (pagina.get("extract") or "").strip()
                 fontes = [
                     {
@@ -1822,9 +1947,11 @@ def buscar_resultados(assunto, chave_tavily, modo="rapida", progresso=None):
                         "published_date": None,
                         "consulted_at": consultado_em,
                     }
-                    for item in dados_web
+                    for item in paginas_wikipedia
                     if normalizar_url_http(item.get("fullurl", ""))
                 ]
+                if sugestao_consulta and sugestao_consulta.casefold() == assunto.strip().casefold():
+                    sugestao_consulta = None
                 avisos.append(
                     "A pesquisa geral ainda não está configurada. No momento, mostro resultados da Wikipédia em português."
                 )
@@ -1866,6 +1993,7 @@ def buscar_resultados(assunto, chave_tavily, modo="rapida", progresso=None):
         "imagens": imagens,
         "video": video,
         "avisos": avisos,
+        "consulta_sugerida": sugestao_consulta,
         "status_pesquisa": "erro" if falha_busca else "concluida" if fontes or imagens else "sem_resultados" if busca_concluida else "erro",
     }
     if not falha_timeout:
@@ -1890,27 +2018,34 @@ if secao_app in ("Pesquisar", "Nova aba"):
     modos_disponiveis = [rotulo_modo_rapido, rotulo_modo_profundo] if chave_tavily_configurada else [rotulo_modo_rapido]
     if st.session_state.get("modo_pesquisa_opcao") not in modos_disponiveis:
         st.session_state.modo_pesquisa_opcao = rotulo_modo_rapido
-
-
-    if secao_app in ("Pesquisar", "Nova aba") and not st.session_state.resultado_atual:
+if secao_app == "Pesquisar":
+    if not st.session_state.resultado_atual:
         with st.container(key="search-hero"):
             st.markdown(
                 f'<h1 class="search-hero-title">{escape(texto_ui("search_hero_title"))}</h1>'
                 f'<p class="search-hero-caption">{escape(texto_ui("search_hero_caption"))}</p>',
                 unsafe_allow_html=True,
             )
-
-if secao_app == "Pesquisar":
-    # Fail closed: no image provider is enabled before adult-only access is assured.
-    chave_visao = ""
+    try:
+        gemini_secrets = st.secrets
+    except Exception:
+        gemini_secrets = None
+    chave_visao = obter_chave_gemini(gemini_secrets)
+    modelo_visao = obter_modelo_gemini(gemini_secrets)
+    analise_imagem_ativa = bool(
+        st.session_state.get("knowix_adult_verified")
+        and verificacao_idade_ativa
+        and chave_visao
+        and modelo_visao
+    )
     with st.expander(f"🖼️ {texto_ui('image_title')}"):
         st.caption(texto_ui("image_caption"))
-        st.caption(texto_ui("image_missing_key"))
+        st.caption(texto_ui("image_active_privacy") if analise_imagem_ativa else texto_ui("image_missing_key"))
         imagem_enviada = st.file_uploader(
             texto_ui("image_upload"),
             type=["jpg", "jpeg", "png", "webp"],
             max_upload_size=8,
-            disabled=True,
+            disabled=not analise_imagem_ativa,
             key="knowix_image_upload",
         )
         pergunta_imagem = st.text_input(
@@ -1921,7 +2056,7 @@ if secao_app == "Pesquisar":
         )
         analisar = st.button(
             texto_ui("image_analyze"),
-            disabled=True,
+            disabled=not analise_imagem_ativa or not imagem_enviada,
             key="knowix_analyze_image",
             use_container_width=True,
         )
@@ -1934,6 +2069,7 @@ if secao_app == "Pesquisar":
                         st.session_state.analise_imagem = analisar_imagem(
                             imagem_enviada.getvalue(), pergunta_imagem, chave_visao,
                             model=modelo_visao, mime_informado=imagem_enviada.type,
+                            adulto_verificado=st.session_state.get("knowix_adult_verified", False),
                         )
                         st.session_state.analise_imagem_consulta = pergunta_imagem.strip()
                 except ErroVisaoKnowix as erro:
@@ -1976,7 +2112,8 @@ if secao_app == "Pesquisar":
             "busy": "O reconhecimento de fala já está em uso. Aguarde um instante e tente novamente.",
             "canceled": "Pesquisa por voz cancelada.",
             "error": "Não consegui reconhecer sua fala. Tente novamente.",
-            "privacy": "O áudio pode ser enviado ao serviço de reconhecimento do navegador ou dispositivo. O Knowix recebe o texto e só pesquisa após sua confirmação.",
+            "privacy": "O áudio pode sair deste dispositivo.",
+            "privacy_note": "O áudio pode ser enviado ao serviço de reconhecimento do dispositivo. O Knowix recebe apenas a transcrição e pesquisa após sua confirmação.",
         },
         "English": {
             "button": "Search by voice", "listening": "Listening…", "stop": "Stop listening",
@@ -1989,7 +2126,8 @@ if secao_app == "Pesquisar":
             "busy": "Speech recognition is already in use. Wait a moment and try again.",
             "canceled": "Voice search canceled.",
             "error": "I couldn't recognize your speech. Please try again.",
-            "privacy": "Audio may be sent to your browser's or device's recognition service. Knowix receives the text and searches only after you confirm.",
+            "privacy": "Audio may leave this device.",
+            "privacy_note": "Audio may be sent to the device's recognition service. Knowix receives only the transcript and searches after you confirm.",
         },
         "Español": {
             "button": "Buscar por voz", "listening": "Escuchando…", "stop": "Dejar de escuchar",
@@ -2002,19 +2140,15 @@ if secao_app == "Pesquisar":
             "busy": "El reconocimiento de voz ya está en uso. Espera un momento e inténtalo de nuevo.",
             "canceled": "Búsqueda por voz cancelada.",
             "error": "No pude reconocer tu voz. Inténtalo de nuevo.",
-            "privacy": "El audio puede enviarse al servicio de reconocimiento del navegador o dispositivo. Knowix recibe el texto y busca solo cuando confirmes.",
+            "privacy": "El audio puede salir de este dispositivo.",
+            "privacy_note": "El audio puede enviarse al servicio de reconocimiento del dispositivo. Knowix recibe solo la transcripción y busca cuando confirmes.",
         },
     }[st.session_state.idioma_visual]
     textos_voz["theme"] = "dark" if tema_escuro else "light"
-    textos_voz["privacy_note"] = {
-        "Português": "O áudio pode ser enviado ao serviço de reconhecimento do navegador ou dispositivo. O Knowix recebe apenas a transcrição e pesquisa após sua confirmação.",
-        "English": "Audio may be sent to your browser's or device's recognition service. Knowix receives only the transcript and searches after you confirm.",
-        "Español": "El audio puede enviarse al servicio de reconocimiento del navegador o dispositivo. Knowix recibe solo la transcripción y busca cuando confirmes.",
-    }[st.session_state.idioma_visual]
     with st.container(key="search-action-row"):
         col_busca, col_voz = st.columns([1, 0.11], vertical_alignment="center", gap="small")
-        # Keep the voice bridge before the query widget so Android transcripts
-        # can initialize the input before Streamlit creates it.
+        # Renderizar a ponte antes do campo permite aplicar a transcrição
+        # ao estado do widget sem modificá-lo depois da criação.
         with col_voz:
             resultado_voz = componente_pesquisa_por_voz(
                 language=codigo_idioma_voz,
@@ -2023,6 +2157,7 @@ if secao_app == "Pesquisar":
                 key="pesquisa_por_voz",
                 height=56,
             )
+        st.caption(textos_voz["privacy_note"])
         if isinstance(resultado_voz, dict):
             texto_reconhecido = str(resultado_voz.get("transcript", "")).strip()
             id_reconhecimento = resultado_voz.get("id")
@@ -2043,8 +2178,6 @@ if secao_app == "Pesquisar":
                     )
                 with coluna_botao:
                     buscar = st.form_submit_button(texto_ui("search_button"), use_container_width=True)
-        st.caption(textos_voz["privacy_note"])
-
 
 elif secao_app == "Nova aba":
     st.markdown(f"### {texto_ui('new_search_title')}")
@@ -2061,6 +2194,7 @@ elif secao_app == "Nova aba":
         pergunta = pergunta_nova
         buscar = True
 
+if secao_app in ("Pesquisar", "Nova aba"):
     with st.container(key="search-mode"):
         modo_escolhido = st.radio(
             texto_ui("research_mode_label"),
@@ -2073,6 +2207,7 @@ elif secao_app == "Nova aba":
             st.caption(texto_ui("deep_cost_note"))
         elif not chave_tavily_configurada:
             st.caption(texto_ui("deep_needs_key"))
+
 if secao_app == "Pesquisar" and not st.session_state.resultado_atual:
     with st.container(key="search-shortcuts"):
         st.markdown(f"#### {texto_ui('shortcuts_title')}")
@@ -2447,14 +2582,17 @@ elif secao_app == "Configurações":
     st.caption(texto_ui("theme_caption"))
     st.markdown(f"#### {texto_ui('accessibility')}")
     nomes_tamanhos = {
-        "Padrão": texto_ui("text_size_standard"), "Grande": texto_ui("text_size_large"),
+        "Padrão": texto_ui("text_size_standard"),
+        "Grande": texto_ui("text_size_large"),
         "Muito grande": texto_ui("text_size_larger"),
     }
     tamanho_exibido = nomes_tamanhos[st.session_state.escala_texto]
     if st.session_state.get("escala_texto_display") != tamanho_exibido:
         st.session_state.escala_texto_display = tamanho_exibido
-    st.radio(texto_ui("text_size"), list(nomes_tamanhos.values()), key="escala_texto_display",
-             on_change=sincronizar_escala_texto, horizontal=True)
+    st.radio(
+        texto_ui("text_size"), list(nomes_tamanhos.values()), key="escala_texto_display",
+        on_change=sincronizar_escala_texto, horizontal=True,
+    )
     st.markdown(f"#### {texto_ui('privacy')}")
     st.caption(texto_ui("history_privacy"))
     st.button(texto_ui("clear_history"), key="apagar_historico", on_click=limpar_historico_local)
@@ -2569,6 +2707,14 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
         if falha_traducao:
             st.warning(texto_ui("translation_error"))
     assunto = resultado_atual["assunto"]
+    sugestao_consulta = resultado_atual.get("consulta_sugerida")
+    if sugestao_consulta:
+        st.info(f"{texto_ui('did_you_mean')}: **{sugestao_consulta}**")
+        st.button(
+            sugestao_consulta, key="usar_consulta_corrigida",
+            on_click=preparar_busca_interna, args=(sugestao_consulta,),
+            use_container_width=True,
+        )
     fontes = resultado_atual["fontes"]
     video = resultado_atual["video"]
     imagens = resultado_atual.get("imagens", [])
@@ -2594,6 +2740,16 @@ if resultado_atual and secao_app in ("Pesquisar", "Nova aba"):
             f'<div class="section-kicker">{texto_ui("results_for")} “{assunto_seguro}”</div>',
             unsafe_allow_html=True,
         )
+        if resultado_atual.get("status_pesquisa") == "erro":
+            st.error(texto_ui("temporary_search_error"))
+            st.button(
+                texto_ui("retry_search"), key="tentar_busca_novamente",
+                on_click=tentar_busca_novamente,
+                args=(resultado_atual.get("consulta_busca") or assunto,),
+                use_container_width=True,
+            )
+        elif resultado_atual.get("status_pesquisa") == "sem_resultados":
+            st.info(texto_ui("no_results_detail"))
 
         tipos_disponiveis = filtros_disponiveis(
             fontes, bool(video or st.session_state.videos_adicionais), bool(imagens)
