@@ -18,6 +18,7 @@
       const notice = document.getElementById("notice");
       const message = document.getElementById("message");
       let offlineText = "No internet connection. Check your network and try again when it returns.";
+      let viewportConnected = false;
       function setFrameHeight(height) {
         window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:setFrameHeight",height}, "*");
       }
@@ -27,12 +28,53 @@
         message.textContent = offlineText;
         setFrameHeight(offline ? Math.ceil(notice.getBoundingClientRect().height + 4) : 1);
       }
+      function connectAccessibleViewport(args) {
+        try {
+          const parentDoc = window.parent.document;
+          const main = parentDoc.querySelector('[data-testid="stMain"]');
+          if (!main) return;
+          main.id = "main-content";
+          main.setAttribute("role", "main");
+          main.setAttribute("aria-label", args.rotulo_principal || "Main content");
+          if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+          if (viewportConnected) return;
+          viewportConnected = true;
+          const viewport = window.parent.visualViewport;
+          let pending = false;
+          function keepFocusedControlVisible() {
+            pending = false;
+            const active = parentDoc.activeElement;
+            if (!active || active === parentDoc.body || !main.contains(active)) return;
+            const target = active.closest('input,textarea,select,button,a[href],[tabindex]:not([tabindex="-1"])') || active;
+            if (!main.contains(target)) return;
+            const visibleTop = viewport ? viewport.offsetTop : 0;
+            const visibleBottom = visibleTop + (viewport ? viewport.height : window.parent.innerHeight);
+            const rect = target.getBoundingClientRect();
+            if (rect.top < visibleTop + 12 || rect.bottom > visibleBottom - 20) {
+              const reduceMotion = parentDoc.defaultView.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              target.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "nearest"});
+            }
+          }
+          function scheduleCheck() {
+            if (pending) return;
+            pending = true;
+            setTimeout(keepFocusedControlVisible, 90);
+            setTimeout(keepFocusedControlVisible, 280);
+          }
+          parentDoc.addEventListener("focusin", scheduleCheck, true);
+          if (viewport) {
+            viewport.addEventListener("resize", scheduleCheck);
+            viewport.addEventListener("scroll", scheduleCheck);
+          }
+        } catch (_) { /* The app remains usable if the host disallows parent access. */ }
+      }
       window.addEventListener("online", update);
       window.addEventListener("offline", update);
       window.addEventListener("message", (event) => {
         if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
         const args = event.data.args || {};
         if (typeof args.mensagem_offline === "string") offlineText = args.mensagem_offline;
+        connectAccessibleViewport(args);
         update();
       });
       window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:componentReady",apiVersion:1}, "*");
