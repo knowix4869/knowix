@@ -2645,7 +2645,7 @@ if buscar:
                 "",
                 unsafe_allow_html=True,
             )
-            buscar = False
+            buscar = True
 
 if buscar:
     consulta_busca = pergunta.strip()
