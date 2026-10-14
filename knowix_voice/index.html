@@ -8,21 +8,23 @@
       :root { color-scheme:light; }
       :root[data-theme="dark"] { color-scheme:dark; }
       body { color: #14213d; font: 12px Arial, sans-serif; margin: 0; padding: 1px 0 0; }
-      .voice-control { margin:0 auto; max-width:150px; text-align:center; width:100%; }
+      .voice-control { margin:0 auto; max-width:52px; text-align:center; width:100%; }
       button {
         align-items: center; background: linear-gradient(135deg,#176eae,#485fea 65%,#7557df);
-        border: 1px solid transparent; border-radius: 15px; box-shadow:0 7px 18px #425edb33;
+        border: 1px solid transparent; border-radius: 16px; box-shadow:0 5px 13px #425edb2b;
         color: #fff; cursor: pointer; display: flex; font: 650 13px Arial, sans-serif;
-        gap: 7px; justify-content: center; min-height: 48px; padding: 0 10px;
+        gap: 7px; height:48px; justify-content: center; min-height: 48px; padding: 0;
         transition:filter .16s ease,transform .16s ease,box-shadow .16s ease;
-        touch-action:manipulation; width:100%;
+        touch-action:manipulation; width:48px;
       }
       button:hover { box-shadow:0 9px 22px #425edb44; filter:brightness(1.06); transform:translateY(-1px); }
       button:active { filter:brightness(.98); transform:scale(.98); }
       button:focus-visible { outline:3px solid #246bfe66; outline-offset:3px; }
       button.is-listening { animation:voice-pulse 1.5s ease-in-out infinite; background:linear-gradient(135deg,#b52e55,#db4e67); }
-      .mic-icon { flex:none; height:19px; width:19px; }
+      .mic-icon { flex:none; height:21px; width:21px; }
+      #button-label { height:1px; overflow:hidden; position:absolute; white-space:nowrap; width:1px; clip-path:inset(50%); }
       .status { color: #69758c; font-size:10px; line-height:1.35; margin:5px 1px 0; text-align:center; }
+      .status:empty { display:none; }
       @keyframes voice-pulse { 50% { box-shadow:0 0 0 5px #d9446330,0 7px 18px #d9446330; } }
       :root[data-theme="dark"] body {
         color: #eef3ff;
@@ -62,6 +64,8 @@
         listening = value;
         button.classList.toggle("is-listening", value);
         buttonLabel.textContent = value ? (labels.stop || labels.listening) : labels.button;
+        button.setAttribute("aria-label", buttonLabel.textContent);
+        button.title = buttonLabel.textContent;
         streamlit.height();
       }
 
@@ -133,7 +137,9 @@
         document.documentElement.dataset.theme = labels.theme === "dark" ? "dark" : "light";
         language = args.language || "pt-BR";
         buttonLabel.textContent = labels.button || "Search by voice";
-        status.textContent = labels.privacy || "";
+        status.textContent = "";
+        button.setAttribute("aria-label", labels.button || "Search by voice");
+        button.title = labels.button || "Search by voice";
         androidBridge = window.KnowixAndroidVoice || null;
         if (androidBridge && !androidListenerAttached) {
           androidBridge.addEventListener("message", onAndroidMessage);
