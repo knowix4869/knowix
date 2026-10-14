@@ -2640,9 +2640,9 @@ if buscar:
         pergunta_exibida = consulta_busca
         endereco_direto = detectar_url_digitada(consulta_busca)
         if endereco_direto:
-            st.info(texto_ui("url_detected"))
+            components.html(f"<script>window.parent.location.assign({json.dumps(endereco_direto)});</script>", height=0)
             st.markdown(
-                f'<a class="direct-url-link" href="{escape(endereco_direto, quote=True)}">{escape(texto_ui("open_url"))}</a>',
+                "",
                 unsafe_allow_html=True,
             )
             buscar = False
