@@ -4,6 +4,7 @@ import hashlib
 import queue
 import re
 import time
+import unicodedata
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -288,6 +289,8 @@ estilo = (
     .web-result-dates { color:var(--muted); font-size:calc(12px * var(--knowix-text-scale)); line-height:1.5; margin-top:6px; }
     .web-result-actions [data-testid="stHorizontalBlock"] { align-items:center; gap:8px; }
     .web-result-actions [data-testid="stButton"] button { min-height:44px; }
+    .direct-url-link { align-items:center; background:__COR_CARTAO__; border:1px solid __COR_AZUL__; border-radius:12px; color:var(--blue); display:inline-flex; font-weight:700; min-height:48px; padding:0 18px; text-decoration:none; }
+    .direct-url-link:hover { background:__COR_CAMPO__; text-decoration:underline; }
     .section-kicker { color:var(--muted); font-size:11px; font-weight:750; letter-spacing:1.2px; text-transform:uppercase; }
     [data-testid="stMarkdownContainer"] h2,
     [data-testid="stMarkdownContainer"] h3,
@@ -353,6 +356,9 @@ TRADUCOES_UI = {
         "search_hero_title": "O que você quer descobrir?",
         "search_hero_caption": "Pesquise respostas e fontes para explorar.",
         "search_button": "Pesquisar", "new_search_title": "Abra uma nova pesquisa",
+        "invalid_search": "Digite uma busca com pelo menos uma letra ou número.", "too_long_search": "A busca pode ter no máximo 1.000 caracteres.",
+        "open_url": "Abrir site", "url_detected": "Endereço reconhecido. Você pode abrir o site diretamente.",
+        "suggestions_label": "Sugestões de pesquisa, baseadas no histórico deste navegador e em temas populares.",
         "new_search_caption": "Inicie outra busca sem apagar o histórico desta sessão.",
         "new_search_label": "O que quer pesquisar nesta nova aba?",
         "new_search_placeholder": "Digite outra pergunta ou assunto...",
@@ -441,6 +447,9 @@ TRADUCOES_UI = {
         "section_Configurações": "Settings", "section_Sobre o app": "About the app", "section_Sugestões": "Suggestions",
         "search_placeholder": "⌕  Search the web or ask Knowix…", "search_hero_title": "What would you like to discover?",
         "search_hero_caption": "Search for answers and sources to explore.", "search_button": "Search",
+        "invalid_search": "Enter a search with at least one letter or number.", "too_long_search": "Searches can contain up to 1,000 characters.",
+        "open_url": "Open website", "url_detected": "Address recognized. You can open the website directly.",
+        "suggestions_label": "Search suggestions based on this browser's history and popular topics.",
         "new_search_title": "Start a new search", "new_search_caption": "Start another search without clearing this session's history.",
         "new_search_label": "What would you like to search in this new tab?", "new_search_placeholder": "Enter another question or topic...",
         "new_search_button": "Search in this tab", "search_hint": "Explore topics, questions, news, science, technology, and more.",
@@ -526,6 +535,9 @@ TRADUCOES_UI = {
         "section_Configurações": "Configuración", "section_Sobre o app": "Acerca de la app", "section_Sugestões": "Sugerencias",
         "search_placeholder": "⌕  Busca en la web o pregunta a Knowix…", "search_hero_title": "¿Qué quieres descubrir?",
         "search_hero_caption": "Busca respuestas y fuentes para explorar.", "search_button": "Buscar",
+        "invalid_search": "Escribe una búsqueda con al menos una letra o un número.", "too_long_search": "La búsqueda puede tener hasta 1.000 caracteres.",
+        "open_url": "Abrir sitio", "url_detected": "Dirección reconocida. Puedes abrir el sitio directamente.",
+        "suggestions_label": "Sugerencias de búsqueda basadas en el historial de este navegador y temas populares.",
         "new_search_title": "Iniciar una nueva búsqueda", "new_search_caption": "Inicia otra búsqueda sin borrar el historial de esta sesión.",
         "new_search_label": "¿Qué quieres buscar en esta nueva pestaña?", "new_search_placeholder": "Escribe otra pregunta o tema...",
         "new_search_button": "Buscar en esta pestaña", "search_hint": "Explora temas, preguntas, noticias, ciencia, tecnología y mucho más.",
@@ -612,6 +624,35 @@ TRADUCOES_UI = {
 def texto_ui(chave):
     idioma = st.session_state.idioma_visual
     return TRADUCOES_UI[idioma].get(chave, TRADUCOES_UI["Português"].get(chave, chave))
+
+
+def validar_consulta(valor):
+    texto = unicodedata.normalize("NFC", str(valor or ""))
+    texto = "".join(" " if caractere.isspace() else caractere for caractere in texto
+                    if caractere.isspace() or unicodedata.category(caractere) != "Cc")
+    consulta = " ".join(texto.split())
+    if len(consulta) > 1000:
+        return consulta, "too_long_search"
+    if not any(caractere.isalnum() for caractere in consulta):
+        return consulta, "invalid_search"
+    return consulta, ""
+
+
+def detectar_url_digitada(valor):
+    texto = str(valor or "").strip().rstrip(".,;!?。！？")
+    if not texto or any(caractere.isspace() for caractere in texto):
+        return ""
+    endereco = texto if re.match(r"^https?://", texto, flags=re.IGNORECASE) else f"https://{texto}"
+    url_segura = normalizar_url_http(endereco, max_caracteres=2048)
+    if not url_segura:
+        return ""
+    try:
+        hostname = urlparse(url_segura).hostname or ""
+    except ValueError:
+        return ""
+    if "." not in hostname and ":" not in hostname:
+        return ""
+    return url_segura
 
 
 st.markdown(f'<a class="skip-link" href="#main-content">{escape(texto_ui("skip_main"))}</a>', unsafe_allow_html=True)
@@ -1449,7 +1490,16 @@ with st.container(key="app-topbar", horizontal=True, horizontal_alignment="distr
         )
 componente_status_rede(default=None, key="knowix_connection_state", height=1,
                         mensagem_offline=texto_ui("offline_notice"),
-                        rotulo_principal=texto_ui(f"section_{st.session_state.secao_canonica}"))
+                        rotulo_principal=texto_ui(f"section_{st.session_state.secao_canonica}"),
+                        rotulo_sugestoes=texto_ui("suggestions_label"),
+                        sugestoes_busca=list(dict.fromkeys(
+                            [item.get("query", "") for item in st.session_state.dados_locais.get("history", [])[:15]]
+                            + {
+                                "Português": ["previsão do tempo", "notícias de hoje", "como funciona", "o que é", "ciência e tecnologia", "pesquisa científica"],
+                                "English": ["weather forecast", "today's news", "how does it work", "what is", "science and technology", "research papers"],
+                                "Español": ["pronóstico del tiempo", "noticias de hoy", "cómo funciona", "qué es", "ciencia y tecnología", "investigación científica"],
+                            }[st.session_state.idioma_visual]
+                        ))[:24])
 if st.session_state.erro_dados_locais:
     st.warning(texto_ui("storage_error"))
 
@@ -1920,6 +1970,11 @@ if secao_app == "Pesquisar":
             "recognized": "Fala reconhecida. Confira o texto e toque em Pesquisar.",
             "unsupported": "Este navegador não oferece pesquisa por voz.",
             "permission": "Permita o microfone para usar a pesquisa por voz.",
+            "unavailable": "O reconhecimento de fala não está disponível neste aparelho. Confira se há um serviço de voz instalado.",
+            "network": "O serviço de reconhecimento não conseguiu se conectar. Confira a internet e tente novamente.",
+            "no_speech": "Não detectei uma fala. Fale após o sinal e tente novamente.",
+            "busy": "O reconhecimento de fala já está em uso. Aguarde um instante e tente novamente.",
+            "canceled": "Pesquisa por voz cancelada.",
             "error": "Não consegui reconhecer sua fala. Tente novamente.",
             "privacy": "O áudio pode ser enviado ao serviço de reconhecimento do navegador ou dispositivo. O Knowix recebe o texto e só pesquisa após sua confirmação.",
         },
@@ -1928,6 +1983,11 @@ if secao_app == "Pesquisar":
             "recognized": "Speech recognized. Review the text and select Search.",
             "unsupported": "Voice search is unavailable in this browser.",
             "permission": "Allow microphone access to use voice search.",
+            "unavailable": "Speech recognition is unavailable on this device. Check for an installed voice service.",
+            "network": "The recognition service could not connect. Check your internet connection and try again.",
+            "no_speech": "No speech was detected. Speak after the prompt and try again.",
+            "busy": "Speech recognition is already in use. Wait a moment and try again.",
+            "canceled": "Voice search canceled.",
             "error": "I couldn't recognize your speech. Please try again.",
             "privacy": "Audio may be sent to your browser's or device's recognition service. Knowix receives the text and searches only after you confirm.",
         },
@@ -1936,6 +1996,11 @@ if secao_app == "Pesquisar":
             "recognized": "Voz reconocida. Revisa el texto y pulsa Buscar.",
             "unsupported": "Este navegador no ofrece búsqueda por voz.",
             "permission": "Permite el micrófono para usar la búsqueda por voz.",
+            "unavailable": "El reconocimiento de voz no está disponible en este dispositivo. Comprueba si hay un servicio de voz instalado.",
+            "network": "El servicio de reconocimiento no pudo conectarse. Revisa internet e inténtalo de nuevo.",
+            "no_speech": "No detecté voz. Habla después de la señal e inténtalo de nuevo.",
+            "busy": "El reconocimiento de voz ya está en uso. Espera un momento e inténtalo de nuevo.",
+            "canceled": "Búsqueda por voz cancelada.",
             "error": "No pude reconocer tu voz. Inténtalo de nuevo.",
             "privacy": "El audio puede enviarse al servicio de reconocimiento del navegador o dispositivo. Knowix recibe el texto y busca solo cuando confirmes.",
         },
@@ -2426,6 +2491,23 @@ if secao_app == "Nova aba" or (secao_app == "Pesquisar" and st.session_state.res
         f'<p class="search-hint">{escape(texto_ui("search_hint"))}</p>',
         unsafe_allow_html=True,
     )
+
+if buscar:
+    consulta_busca, erro_validacao = validar_consulta(pergunta)
+    if erro_validacao:
+        st.warning(texto_ui(erro_validacao))
+        buscar = False
+    else:
+        pergunta = consulta_busca
+        pergunta_exibida = consulta_busca
+        endereco_direto = detectar_url_digitada(consulta_busca)
+        if endereco_direto:
+            st.info(texto_ui("url_detected"))
+            st.markdown(
+                f'<a class="direct-url-link" href="{escape(endereco_direto, quote=True)}">{escape(texto_ui("open_url"))}</a>',
+                unsafe_allow_html=True,
+            )
+            buscar = False
 
 if buscar:
     consulta_busca = pergunta.strip()
