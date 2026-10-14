@@ -60,6 +60,8 @@ if "tema_visual" not in st.session_state:
 if st.session_state.get("tema_visual") not in {"Claro", "Escuro", "Sistema"}:
     st.session_state.tema_visual = "Sistema"
 st.session_state.setdefault("tema_sistema", "light")
+if st.session_state.get("escala_texto") not in {"Padrão", "Grande", "Muito grande"}:
+    st.session_state.escala_texto = "Padrão"
 # Atualiza a preferência de sessões anteriores para evitar que uma configuração
 # antiga em inglês faça a tela abrir nesse idioma após a correção.
 if st.session_state.get("versao_idioma_visual") != 2:
@@ -76,7 +78,7 @@ tema_escuro = st.session_state.tema_visual == "Escuro" or (
 cor_fundo = "#0d1422" if tema_escuro else "#f4f7fc"
 cor_cartao = "#172235" if tema_escuro else "#ffffff"
 cor_texto = "#eef3ff" if tema_escuro else "#14213d"
-cor_secundaria = "#adbad0" if tema_escuro else "#69758c"
+cor_secundaria = "#adbad0" if tema_escuro else "#596579"
 cor_borda = "#33425a" if tema_escuro else "#e2e8f2"
 cor_campo = "#202d43" if tema_escuro else "#f4f7fb"
 cor_azul = "#8db4ff" if tema_escuro else "#246bfe"
@@ -86,13 +88,21 @@ estilo = (
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-    :root { --ink:__COR_TEXTO__; --muted:__COR_SECUNDARIA__; --blue:__COR_AZUL__; --line:__COR_BORDA__; }
+    :root { --ink:__COR_TEXTO__; --muted:__COR_SECUNDARIA__; --blue:__COR_AZUL__; --line:__COR_BORDA__; --knowix-text-scale:__ESCALA_TEXTO__; }
     [data-testid="stAppViewContainer"] { background:__COR_FUNDO__; color:var(--ink); }
     [data-testid="stMain"] { color:var(--ink); }
     [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {
       color:var(--muted) !important; opacity:1 !important;
     }
     [data-testid="stMarkdownContainer"] p { color:var(--ink); }
+    [data-testid="stMarkdownContainer"] p, [data-testid="stMarkdownContainer"] li { font-size:calc(1rem * var(--knowix-text-scale)); line-height:1.6; }
+    [data-testid="stCaptionContainer"] { font-size:calc(.875rem * var(--knowix-text-scale)); line-height:1.55; }
+    [data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea { font-size:calc(16px * var(--knowix-text-scale)) !important; }
+    [data-testid="stButton"] button, [data-testid="stLinkButton"] a, [data-testid="stRadio"] label, [data-testid="stCheckbox"] label, [data-testid="stSelectbox"] label { font-size:calc(15px * var(--knowix-text-scale)) !important; }
+    [data-testid="stMain"], [data-testid="stMainBlockContainer"] { scroll-padding-block:20px; }
+    :focus-visible { outline:3px solid __COR_AZUL__ !important; outline-offset:3px; }
+    .skip-link { background:__COR_CARTAO__; border:2px solid __COR_AZUL__; border-radius:10px; color:var(--ink); left:12px; padding:10px 14px; position:fixed; top:8px; transform:translateY(-160%); z-index:10000; }
+    .skip-link:focus { transform:translateY(0); }
     a { color:var(--blue); }
     [data-testid="stHeader"] { background:transparent; }
     footer, [data-testid="stFooter"], [data-testid="stDecoration"],
@@ -125,7 +135,7 @@ estilo = (
     .st-key-language-control [data-testid="stPopover"] button:focus-visible {
       box-shadow:0 0 0 4px #8db2ff55,0 6px 16px rgba(60,100,220,.24) !important;
     }
-    div[data-testid="stTextInput"] [data-testid="InputInstructions"] { display:none !important; }
+    div[data-testid="stTextInput"] [data-testid="InputInstructions"] { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
     [data-testid="stSelectbox"] input[role="combobox"] {
       color:__COR_TEXTO__ !important; -webkit-text-fill-color:__COR_TEXTO__ !important; opacity:1 !important;
     }
@@ -266,18 +276,18 @@ estilo = (
       color:var(--blue); display:flex; flex:0 0 30px; font-size:13px; font-weight:800;
       height:30px; justify-content:center; width:30px;
     }
-    .web-result-domain { color:var(--ink); font-size:14px; font-weight:600; line-height:1.35; }
-    .web-result-url { color:var(--muted); font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+    .web-result-domain { color:var(--ink); font-size:calc(14px * var(--knowix-text-scale)); font-weight:600; line-height:1.35; }
+    .web-result-url { color:var(--muted); font-size:calc(12px * var(--knowix-text-scale)); line-height:1.35; overflow-wrap:anywhere; }
     .web-result-title {
-      color:var(--blue) !important; display:block; font-size:20px; font-weight:500;
+      color:var(--blue) !important; display:block; font-size:calc(20px * var(--knowix-text-scale)); font-weight:500;
       line-height:1.35; margin:0 0 4px; text-decoration:none !important;
     }
     .web-result-title { transition:color .14s ease; }
     .web-result-title:hover { text-decoration:underline !important; }
-    .web-result-snippet { color:var(--ink); font-size:14px; line-height:1.55; }
-    .web-result-dates { color:var(--muted); font-size:12px; line-height:1.5; margin-top:6px; }
+    .web-result-snippet { color:var(--ink); font-size:calc(14px * var(--knowix-text-scale)); line-height:1.55; }
+    .web-result-dates { color:var(--muted); font-size:calc(12px * var(--knowix-text-scale)); line-height:1.5; margin-top:6px; }
     .web-result-actions [data-testid="stHorizontalBlock"] { align-items:center; gap:8px; }
-    .web-result-actions [data-testid="stButton"] button { min-height:38px; }
+    .web-result-actions [data-testid="stButton"] button { min-height:44px; }
     .section-kicker { color:var(--muted); font-size:11px; font-weight:750; letter-spacing:1.2px; text-transform:uppercase; }
     [data-testid="stMarkdownContainer"] h2,
     [data-testid="stMarkdownContainer"] h3,
@@ -328,6 +338,7 @@ for marcador, valor in {
     "__COR_BORDA__": cor_borda,
     "__COR_CAMPO__": cor_campo,
     "__COR_AZUL__": cor_azul,
+    "__ESCALA_TEXTO__": {"Padrão": "1", "Grande": "1.12", "Muito grande": "1.25"}[st.session_state.escala_texto],
     "__COR_TEXTO_BOTAO__": cor_texto_botao,
 }.items():
     estilo = estilo.replace(marcador, valor)
@@ -350,6 +361,7 @@ TRADUCOES_UI = {
         "history_filter": "Pesquisar no histórico",
         "settings_title": "Configurações", "appearance": "Aparência", "theme_label": "Tema do Knowix",
         "theme_caption": "Escolha claro, escuro ou Sistema para acompanhar a configuração do dispositivo.",
+        "accessibility": "Acessibilidade", "text_size": "Tamanho do texto", "text_size_standard": "Padrão", "text_size_large": "Grande", "text_size_larger": "Muito grande", "skip_main": "Pular para o conteúdo principal",
         "privacy": "Privacidade", "history_privacy": "Histórico, favoritos, pastas, projetos e preferências ficam somente neste navegador. Use a opção de apagar para remover o histórico deste dispositivo.",
         "clear_history": "Apagar histórico deste navegador", "history_cleared": "Histórico apagado.",
         "favorite_title": "Favoritos", "favorite_empty": "Salve uma pesquisa ou fonte para encontrá-la aqui.",
@@ -436,6 +448,7 @@ TRADUCOES_UI = {
         "history_filter": "Search history",
         "settings_title": "Settings", "appearance": "Appearance", "theme_label": "Knowix theme",
         "theme_caption": "Choose light, dark, or System to follow this device’s appearance setting.",
+        "accessibility": "Accessibility", "text_size": "Text size", "text_size_standard": "Default", "text_size_large": "Large", "text_size_larger": "Extra large", "skip_main": "Skip to main content",
         "privacy": "Privacy", "history_privacy": "History, favorites, folders, projects, and preferences stay in this browser. Use the clear option to remove history from this device.",
         "clear_history": "Clear browser history", "history_cleared": "History cleared.",
         "favorite_title": "Favorites", "favorite_empty": "Save a search or source to find it here.",
@@ -520,6 +533,7 @@ TRADUCOES_UI = {
         "history_filter": "Buscar en el historial",
         "settings_title": "Configuración", "appearance": "Apariencia", "theme_label": "Tema de Knowix",
         "theme_caption": "Elige claro, oscuro o Sistema para seguir la apariencia del dispositivo.",
+        "accessibility": "Accesibilidad", "text_size": "Tamaño del texto", "text_size_standard": "Estándar", "text_size_large": "Grande", "text_size_larger": "Muy grande", "skip_main": "Saltar al contenido principal",
         "privacy": "Privacidad", "history_privacy": "El historial, los favoritos, las carpetas, los proyectos y las preferencias quedan en este navegador. Usa la opción de borrar para quitar el historial de este dispositivo.",
         "clear_history": "Borrar el historial de este navegador", "history_cleared": "Historial borrado.",
         "favorite_title": "Favoritos", "favorite_empty": "Guarda una búsqueda o fuente para encontrarla aquí.",
@@ -600,6 +614,9 @@ def texto_ui(chave):
     return TRADUCOES_UI[idioma].get(chave, TRADUCOES_UI["Português"].get(chave, chave))
 
 
+st.markdown(f'<a class="skip-link" href="#main-content">{escape(texto_ui("skip_main"))}</a>', unsafe_allow_html=True)
+
+
 # Knowix is now an adults-only service. This is a self-declaration, not
 # independent age verification; no date of birth or identity document is stored.
 IDIOMAS_PORTAO_ADULTO = {
@@ -668,11 +685,14 @@ def guardar_preferencias_local():
         return
     idioma = st.session_state.get("idioma_visual", "Português")
     tema = st.session_state.get("tema_visual", "Sistema")
+    escala = st.session_state.get("escala_texto", "Padrão")
     if idioma not in {"Português", "English", "Español"}:
         idioma = "Português"
     if tema not in {"Claro", "Escuro", "Sistema"}:
         tema = "Sistema"
-    st.session_state.dados_locais["preferences"] = {"language": idioma, "theme": tema}
+    if escala not in {"Padrão", "Grande", "Muito grande"}:
+        escala = "Padrão"
+    st.session_state.dados_locais["preferences"] = {"language": idioma, "theme": tema, "text_scale": escala}
     st.session_state.preferencias_locais_tocadas = True
     marcar_dados_locais_alterados()
 
@@ -694,6 +714,18 @@ def sincronizar_tema_selecionado():
     if selecionado in opcoes:
         st.session_state.tema_visual = opcoes[selecionado]
         guardar_preferencias_local()
+
+
+def sincronizar_escala_texto():
+    idioma = st.session_state.idioma_visual
+    rotulos = {
+        "Padrão": TRADUCOES_UI[idioma]["text_size_standard"],
+        "Grande": TRADUCOES_UI[idioma]["text_size_large"],
+        "Muito grande": TRADUCOES_UI[idioma]["text_size_larger"],
+    }
+    selecionado = st.session_state.get("escala_texto_display")
+    st.session_state.escala_texto = {rotulo: chave for chave, rotulo in rotulos.items()}.get(selecionado, "Padrão")
+    guardar_preferencias_local()
 
 
 def traduzir_textos(textos):
@@ -777,7 +809,7 @@ def traduzir_resultado(dados):
 def estado_local_vazio():
     return {"version": 1, "history": [], "favorites": [], "folders": [], "projects": [],
             "folder_notes": {}, "folder_notes_updated_at": {}, "sync_tombstones": {"history": {}, "favorites": {}},
-            "preferences": {"language": "Português", "theme": "Sistema"}}
+            "preferences": {"language": "Português", "theme": "Sistema", "text_scale": "Padrão"}}
 
 
 _SAL_RATE_LIMIT = os.urandom(32)
@@ -946,6 +978,7 @@ def normalizar_dados_locais(valor):
     preferencias = valor.get("preferences") if isinstance(valor.get("preferences"), dict) else {}
     idioma = preferencias.get("language") if preferencias.get("language") in {"Português", "English", "Español"} else "Português"
     tema = preferencias.get("theme") if preferencias.get("theme") in {"Claro", "Escuro", "Sistema"} else "Sistema"
+    escala = preferencias.get("text_scale") if preferencias.get("text_scale") in {"Padrão", "Grande", "Muito grande"} else "Padrão"
     notas_pasta_raw = valor.get("folder_notes") if isinstance(valor.get("folder_notes"), dict) else {}
     notas_pasta = {pasta: str(notas_pasta_raw.get(pasta, ""))[:12000] for pasta in pastas if pasta in notas_pasta_raw}
     notas_pasta_atualizadas_raw = valor.get("folder_notes_updated_at") if isinstance(valor.get("folder_notes_updated_at"), dict) else {}
@@ -957,7 +990,7 @@ def normalizar_dados_locais(valor):
             "projects": projetos[:20], "folder_notes": notas_pasta,
             "folder_notes_updated_at": notas_pasta_atualizadas,
             "sync_tombstones": {"history": tombstones_historico, "favorites": tombstones_favoritos},
-            "preferences": {"language": idioma, "theme": tema}}
+            "preferences": {"language": idioma, "theme": tema, "text_scale": escala}}
 
 
 def marcar_dados_locais_alterados():
@@ -1348,11 +1381,13 @@ if isinstance(resposta_storage, dict):
         preferencia_mudou = (
             st.session_state.idioma_visual != preferencias_salvas["language"]
             or st.session_state.tema_visual != preferencias_salvas["theme"]
+            or st.session_state.escala_texto != preferencias_salvas["text_scale"]
             or (tema_sistema_anterior != st.session_state.tema_sistema
                 and preferencias_salvas["theme"] == "Sistema")
         )
         st.session_state.idioma_visual = preferencias_salvas["language"]
         st.session_state.tema_visual = preferencias_salvas["theme"]
+        st.session_state.escala_texto = preferencias_salvas["text_scale"]
         st.session_state.dados_locais_carregados = True
         st.session_state.historico_pesquisas = [item["query"] for item in st.session_state.dados_locais["history"]]
         if st.session_state.dados_locais_pendente or preferencia_mudou:
@@ -1413,7 +1448,8 @@ with st.container(key="app-topbar", horizontal=True, horizontal_alignment="distr
             on_change=sincronizar_idioma_selecionado,
         )
 componente_status_rede(default=None, key="knowix_connection_state", height=1,
-                        mensagem_offline=texto_ui("offline_notice"))
+                        mensagem_offline=texto_ui("offline_notice"),
+                        rotulo_principal=texto_ui(f"section_{st.session_state.secao_canonica}"))
 if st.session_state.erro_dados_locais:
     st.warning(texto_ui("storage_error"))
 
@@ -2344,6 +2380,16 @@ elif secao_app == "Configurações":
         horizontal=True,
     )
     st.caption(texto_ui("theme_caption"))
+    st.markdown(f"#### {texto_ui('accessibility')}")
+    nomes_tamanhos = {
+        "Padrão": texto_ui("text_size_standard"), "Grande": texto_ui("text_size_large"),
+        "Muito grande": texto_ui("text_size_larger"),
+    }
+    tamanho_exibido = nomes_tamanhos[st.session_state.escala_texto]
+    if st.session_state.get("escala_texto_display") != tamanho_exibido:
+        st.session_state.escala_texto_display = tamanho_exibido
+    st.radio(texto_ui("text_size"), list(nomes_tamanhos.values()), key="escala_texto_display",
+             on_change=sincronizar_escala_texto, horizontal=True)
     st.markdown(f"#### {texto_ui('privacy')}")
     st.caption(texto_ui("history_privacy"))
     st.button(texto_ui("clear_history"), key="apagar_historico", on_click=limpar_historico_local)
